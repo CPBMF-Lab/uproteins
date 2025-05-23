@@ -1,5 +1,11 @@
 import os
 import sys
+import pathlib
+import subprocess
+import functools
+import multiprocessing
+
+import cli
 
 
 class PeptideSearch(object):
@@ -33,32 +39,39 @@ class PeptideSearch(object):
         # cmd_pep_search = 'Rscript %s/mzid_workflow.R %s--database %s --folder %s'\
         #                  % (sys.path[0], arg_string, os.path.abspath(self.orf_file), self.ms_files_folder)
         # os.system(cmd_pep_search)
-        self.loop_search()
+        self.parallel_search()
         cmd_move = 'mv %s/*.mzid %s/' % (self.ms_files_folder, self.database_type)
         os.system(cmd_move)
 
-    def loop_search(self):
+    def parallel_search(self):
+        self.msgf_command = self._build_msgf_command()
         files = [i for i in os.listdir(os.path.abspath(self.ms_files_folder)) if i.endswith('mzML')]
-        for file in files:
-            self.run_msgf(file)
+        max_workers = min(self.args.processes, len(files))
+        pool = multiprocessing.Pool(max_workers)
+        for file, stdout in pool.map(self._run_msgf, files):
+            print(f"[MSGF+ {file}]")
+            print(stdout)
         return self
 
-    def run_msgf(self, file):
+    def _run_msgf(self, file):
         self._check_folder()
-        output = ""
+        database = pathlib.Path(self.orf_file).absolute()
+        cmd = [
+            *self.msgf_command,
+            '-d', str(database),
+            '-s', f'{self.args.mass_spec}/{file}'
+        ]
+
         if self.decoy:
-            output = f" -o {self.args.mass_spec}/{file}_decoy.mzid"
-        ms_args = ""
-        item_list = [None, "mass_spec", "outdir", "transcriptome", "mode", 'skip_assembly', 'skip_db', 'skip_ms',
-                     'skip_postms', 'skip_validation', 'gtf', 'single', 'reads1', 'reads2', 'strandness', 'gffcompare_path',
-                     'gffread_path', 'genome', 'proteome', 'minsize', 'maxsize', 'starts', 'stops', 'threads']
-        for arg in vars(self.args).items():
-            if arg[0] not in item_list and arg[1] is not None:
-                ms_args += f" -{arg[0]} {arg[1]}"
-        db = os.path.abspath(self.orf_file)
-        cmd = f'java -Xmx48G -jar {self.path}/dependencies/MSGF/MSGFPlus.jar -d {db}{output} -tda 0 -s {self.args.mass_spec}/{file} -addFeatures 1{ms_args}'
-        os.system(cmd)
-        return self
+            cmd.append('-o')
+            cmd.append(f'{self.args.mass_spec}/{file}_decoy.mzid')
+
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
+        if (code := result.returncode) != 0:
+            err = f'MSGF+ finished with non-zero return value: {code}'
+            cli.exit(3, err)
+
+        return file, result.stdout
 
     def _check_folder(self):
         if not os.path.exists('mzid'):
@@ -68,6 +81,30 @@ class PeptideSearch(object):
         if not os.path.exists('mzid/Genome'):
             os.system('mkdir mzid/Genome')
 
+    def _build_msgf_command(self) -> list[str]:
+        """Helper function that builds the reusable part of MSGF+ command
+        based on the pipeline args.
+
+        Returns
+        -------
+            list[str]
+                A list of MSGF+ flags extracted from the pipeline args.
+        """
+        database = pathlib.Path(self.orf_file).absolute()
+        cmd: list[str] = [
+            'java',
+            '-Xmx48G',
+            '-jar', f'{self.path}/dependencies/MSGF/MSGFPlus.jar',
+            '-d', str(database),
+            '-tda', '0',
+            '-addFeatures', '1'
+        ]
+        pipeline_args = ('outdir', 'mode', 'mass_spec', 'transcriptome')
+        for key, value in vars(self.args).items():
+            if key not in pipeline_args and value is not None:
+                cmd.append(f'-{key}')
+                cmd.append(value)
+        return cmd
 
     def peptide_filtering(self):
         """ DEPRECATED FOR NOW """
@@ -87,4 +124,3 @@ class PeptideSearch(object):
         os.system(cmd_ms_filter)
         cmd_cat = 'cat %s/*pepseq.txt > %s/clustered_peptides.txt' % (self.database_type, self.database_type)
         os.system(cmd_cat)
-

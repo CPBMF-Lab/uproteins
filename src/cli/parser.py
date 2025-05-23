@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import multiprocessing
 import typing as t
 
 from src.cli import _types
@@ -189,6 +190,12 @@ _ms_parser.add_argument(
     help="Inform the directory containing all your .mzML files.",
     required=True,
     type=os.path.abspath
+)
+_ms_parser.add_argument(
+    '--processes',
+    help='The total number of processes the pipeline can spawn at a time.',
+    default=max(1, multiprocessing.cpu_count() // 2),
+    type=_types.PositiveInt,
 )
 _ms_parser.add_argument(
     "--t",
@@ -435,6 +442,6 @@ def error(message: str) -> t.NoReturn:
     _parser.error(message)
 
 
-def stderr(message: str, end: t.Optional[str]) -> None:
+def stderr(message: str, end: t.Optional[str] = "\n") -> None:
     """Print to stderr."""
     print(message, file=sys.stderr, end=end)

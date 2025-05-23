@@ -18,12 +18,20 @@ class Decoy(object):
             os.system(cmd_dir)
 
     def __get_seqs(self):
-        seqs = []
-        entries = []
-        records = SeqIO.parse(self.df, 'fasta')
-        for record in records:
-            seqs.append(record.seq)
-            entries.append(str(record.description))
+        # seqs = []
+        # entries = []
+        # records = SeqIO.parse(self.df, 'fasta')
+        # for record in records:
+        #     seqs.append(record.seq)
+        #     entries.append(str(record.description))
+        # return seqs, entries
+        def _parse_fasta():
+            with open(self.df, 'r') as fasta_file:
+                for record in SeqIO.parse(fasta_file, 'fasta'):
+                    yield (str(record.seq), str(record.description))
+
+        # Return separate generators for sequences and headers
+        seqs, entries = zip(*_parse_fasta())
         return seqs, entries
 
     def reverse_sequences(self):

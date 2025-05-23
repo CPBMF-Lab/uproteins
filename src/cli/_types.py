@@ -129,3 +129,10 @@ def Codon(val: t.Optional[str]) -> t.Optional[str]:
     if re.fullmatch(r'[ATCG]{3}', val) is None:
         raise TypeError
     return val
+
+
+def PositiveInt(val: str) -> int:
+    n = int(val)
+    if n < 1:
+        raise TypeError
+    return n
