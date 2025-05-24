@@ -99,7 +99,9 @@ class PeptideSearch(object):
             '-tda', '0',
             '-addFeatures', '1'
         ]
-        pipeline_args = ('outdir', 'mode', 'mass_spec', 'transcriptome')
+        pipeline_args = (
+            'outdir', 'mode', 'mass_spec', 'processes', 'transcriptome'
+        )
         for key, value in vars(self.args).items():
             if key not in pipeline_args and value is not None:
                 cmd.append(f'-{key}')
