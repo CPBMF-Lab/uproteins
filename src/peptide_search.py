@@ -2,10 +2,9 @@ import os
 import sys
 import pathlib
 import subprocess
-import functools
 import multiprocessing
 
-import cli
+from src import cli
 
 
 class PeptideSearch(object):
@@ -48,9 +47,10 @@ class PeptideSearch(object):
         files = [i for i in os.listdir(os.path.abspath(self.ms_files_folder)) if i.endswith('mzML')]
         max_workers = min(self.args.processes, len(files))
         pool = multiprocessing.Pool(max_workers)
-        for file, stdout in pool.map(self._run_msgf, files):
-            print(f"[MSGF+ {file}]")
-            print(stdout)
+        with multiprocessing.Pool(max_workers) as pool:
+            for file, stdout in pool.imap_unordered(self._run_msgf, files):
+                print(f"[MSGF+ {file}]")
+                print(stdout)
         return self
 
     def _run_msgf(self, file):
