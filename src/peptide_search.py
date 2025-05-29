@@ -1,6 +1,7 @@
 # Copyright © 2021-2025 Eduardo Vieira de Souza
 # Copyright © 2021-2025 Adriana Canedo
 # Copyright © 2021-2025 Cristiano Valim Bizarro
+# Copyright © 2025 Bruno Maestri A Becker
 #
 # This file is part of uProteInS.
 #
