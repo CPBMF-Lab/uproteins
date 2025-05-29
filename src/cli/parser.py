@@ -454,6 +454,12 @@ _metrics_parser.add_argument("--maxsize", type=int, default=100)
 # ============
 _testing_parser = _modes.add_parser('testing')
 _testing_parser.add_argument(
+    '-o', '--outdir',
+    help='Inform output directory',
+    type=_types.DirectoryName,
+    required=True
+)
+_testing_parser.add_argument(
     "--skip_assembly",
     help="Write TRUE if you want to skip the assembly checking.",
     default="FALSE"
