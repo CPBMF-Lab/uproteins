@@ -464,6 +464,53 @@ _metrics_parser.add_argument(
 _metrics_parser.add_argument("--non-redundant", action="store_true")
 _metrics_parser.add_argument("--maxsize", type=int, default=100)
 
+# ============
+# TESTING MODE
+# ============
+_testing_parser = _modes.add_parser('testing')
+_testing_parser.add_argument(
+    '-o', '--outdir',
+    help='Inform output directory',
+    type=_types.DirectoryName,
+    required=True
+)
+_testing_parser.add_argument(
+    "--skip_assembly",
+    help="Write TRUE if you want to skip the assembly checking.",
+    default="FALSE"
+)
+_testing_parser.add_argument(
+    "--skip_db",
+    help="Write TRUE if you want to skip the database checking.",
+    default="FALSE"
+)
+_testing_parser.add_argument(
+    "--skip_ms",
+    help="Write TRUE if you want to skip the peptide search checking.",
+    default="FALSE"
+)
+_testing_parser.add_argument(
+    "--skip_postms",
+    help="Write TRUE if you want to skip the results processingchecking.",
+    default="FALSE"
+)
+_testing_parser.add_argument(
+    "--skip_validation",
+    help="Write TRUE if you want to skip the validation checking",
+    default="FALSE"
+)
+_testing_parser.add_argument(
+    "--threads",
+    help="Number of threads for samtools and stringtie to use.",
+    type=_types.PositiveInt
+)
+_testing_parser.add_argument(
+    '--memory',
+    help="Maximum memory per thread for samtools sort to use.",
+    type=_types.Memory
+
+)
+
 
 def get_parsers() -> tuple[
     argparse.ArgumentParser,
