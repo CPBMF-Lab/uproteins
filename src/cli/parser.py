@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import multiprocessing
 import typing as t
 
 from src.cli import _types
@@ -198,6 +199,20 @@ _ms_parser.add_argument(
     help="Inform the directory containing all your .mzML files.",
     required=True,
     type=os.path.abspath
+)
+_ms_parser.add_argument(
+    '--processes',
+    help='The total number of parallel processes the pipeline can spawn at a '
+    'time. Each process takes a CPU core. Multiple processes will make the '
+    'pipeline run faster, but will take up more RAM. Default = half the '
+    'number of available cores.',
+    default=max(1, multiprocessing.cpu_count() // 2),
+    type=int
+)
+_ms_parser.add_argument(
+    "--xmx",
+    help="Maximum heap size for the JVM to run MS-GF+ with.",
+    default='48G'
 )
 _ms_parser.add_argument(
     "--t",

@@ -1,73 +1,110 @@
 import os
 import sys
+import pathlib
+import subprocess
+import multiprocessing
+
+from src import cli
 
 
 class PeptideSearch(object):
-    def __init__(self, database_type, ms_files_folder, orf_file, args, decoy=False):
+    def __init__(
+        self,
+        database_type,
+        ms_files_folder,
+        database_file,
+        decoy_file, args
+    ):
         self.database_type = database_type
-        self.ms_files_folder = ms_files_folder
-        self.orf_file = orf_file
+        self.ms_folder = pathlib.Path(ms_files_folder)
+        self.database_file = pathlib.Path(database_file)
+        self.decoy_file = pathlib.Path(decoy_file)
         self.args = args
+        self.msgf_command = self._build_msgf_command()
+        self._check_folder()
         self.path = sys.path[0]
-        self.decoy = decoy
 
     def peptide_identification(self):
-        print("\nPerforming peptide search using %s database\n" % self.database_type)
+        print(f"\nPerforming peptide search using {self.database_type} database\n")
         cmd_dir_ms = 'mkdir %s' % self.database_type
         os.system(cmd_dir_ms)
-        cmd_copy_orf = 'cp %s %s/' % (self.orf_file, self.database_type)
+        cmd_copy_orf = 'cp %s %s/' % (self.database_file, self.database_type)
         os.system(cmd_copy_orf)
-        cmd_copy_db = f'cp {self.orf_file} {os.path.abspath(self.ms_files_folder)}/.'
+        cmd_copy_db = f'cp {self.database_file} {os.path.abspath(self.ms_folder)}/.'
         os.system(cmd_copy_db)
 
-        # list of arguments passed by argparser
-        # arg_list = []
-        # for item in vars(self.args).items():
-        #     item_list = [None, "Mass_spec", "outdir", "Transcriptome", "mode"]
-        #     if item[0] not in item_list:
-        #         arg_list.append("--%s %s" % (item[0], item[1]))
-        # arg_string = ""
-        # for i in range(len(arg_list)):
-        #     arg_string += "%s " % arg_list[i]
-
-        # cmd_pep_search = 'Rscript %s/mzid_workflow.R %s--database %s --folder %s'\
-        #                  % (sys.path[0], arg_string, os.path.abspath(self.orf_file), self.ms_files_folder)
-        # os.system(cmd_pep_search)
-        self.loop_search()
-        cmd_move = 'mv %s/*.mzid %s/' % (self.ms_files_folder, self.database_type)
+        self.parallel_search()
+        cmd_move = 'mv %s/*.mzid %s/' % (self.ms_folder, self.database_type)
         os.system(cmd_move)
 
-    def loop_search(self):
-        files = [i for i in os.listdir(os.path.abspath(self.ms_files_folder)) if i.endswith('mzML')]
-        for file in files:
-            self.run_msgf(file)
+    def parallel_search(self):
+        # A list of tasks to be run, where the first element represents whether
+        # to use a decoy or not, and the second element is a strPath to a mzml
+        # file.
+        # This list has all possible combinations of decoy/not_decoy and each
+        # mzml file. This allows both real and decoy runs to run in parallel
+        # with the same pool.
+        tasks = [
+            (d, f) for d in (True, False)
+            for f in self.ms_folder.iterdir() if f.suffix == '.mzML'
+        ]
+        max_workers = min(self.args.processes, len(tasks))
+        with multiprocessing.Pool(max_workers) as pool:
+            for i, stdout in enumerate(
+                pool.imap_unordered(self._run_msgf, tasks)
+            ):
+                print(f"\n[MS-GF+ {i}]")
+                print(stdout)
         return self
 
-    def run_msgf(self, file):
-        self._check_folder()
-        output = ""
-        if self.decoy:
-            output = f" -o {self.args.mass_spec}/{file}_decoy.mzid"
-        ms_args = ""
-        item_list = [None, "mass_spec", "outdir", "transcriptome", "mode", 'skip_assembly', 'skip_db', 'skip_ms',
-                     'skip_postms', 'skip_validation', 'gtf', 'single', 'reads1', 'reads2', 'strandness', 'gffcompare_path',
-                     'gffread_path', 'genome', 'proteome', 'minsize', 'maxsize', 'starts', 'stops', 'threads']
-        for arg in vars(self.args).items():
-            if arg[0] not in item_list and arg[1] is not None:
-                ms_args += f" -{arg[0]} {arg[1]}"
-        db = os.path.abspath(self.orf_file)
-        cmd = f'java -Xmx48G -jar {self.path}/dependencies/MSGF/MSGFPlus.jar -d {db}{output} -tda 0 -s {self.args.mass_spec}/{file} -addFeatures 1{ms_args}'
-        os.system(cmd)
-        return self
+    def _run_msgf(self, data: tuple[bool, pathlib.Path]):
+        is_decoy = data[0]
+        ms_file = str(data[1].absolute())
+        cmd = [
+            *self.msgf_command,
+            '-d', str(self.decoy_file if is_decoy else self.database_file),
+            '-s', f'{self.args.mass_spec}/{ms_file}'
+        ]
+
+        if is_decoy:
+            cmd.append('-o')
+            cmd.append(f'{self.args.mass_spec}/{ms_file}_decoy.mzid')
+
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
+        if (code := result.returncode) != 0:
+            err = f'MS-GF+ finished with non-zero return value: {code}'
+            cli.exit(3, err)
+
+        return result.stdout
 
     def _check_folder(self):
-        if not os.path.exists('mzid'):
-            os.system('mkdir mzid')
-        if self.args.transcriptome and not os.path.exists('mzid/Transcriptome'):
-            os.system('mkdir mzid/Transcriptome')
-        if not os.path.exists('mzid/Genome'):
-            os.system('mkdir mzid/Genome')
+        mzid_folder = pathlib.Path(f'mzid/{self.database_type}')
+        mzid_folder.mkdir(exist_ok=True, parents=True)
 
+    def _build_msgf_command(self) -> list[str]:
+        """Helper function that builds the reusable part of MSGF+ command
+        based on the pipeline args.
+
+        Returns
+        -------
+            list[str]
+                A list of MSGF+ flags extracted from the pipeline args.
+        """
+        cmd: list[str] = [
+            'java',
+            f'-Xmx{self.args.xmx}',
+            '-jar', f'{self.path}/dependencies/MSGF/MSGFPlus.jar',
+            '-tda', '0',
+            '-addFeatures', '1'
+        ]
+        pipeline_args = (
+            'outdir', 'mode', 'mass_spec', 'processes', 'transcriptome'
+        )
+        for key, value in vars(self.args).items():
+            if key not in pipeline_args and value is not None:
+                cmd.append(f'-{key}')
+                cmd.append(value)
+        return cmd
 
     def peptide_filtering(self):
         """ DEPRECATED FOR NOW """
@@ -87,4 +124,3 @@ class PeptideSearch(object):
         os.system(cmd_ms_filter)
         cmd_cat = 'cat %s/*pepseq.txt > %s/clustered_peptides.txt' % (self.database_type, self.database_type)
         os.system(cmd_cat)
-

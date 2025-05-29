@@ -1,59 +1,67 @@
 import os
 import sys
+import pathlib
+
 from Bio import SeqIO
 
 
-class Decoy(object):
+class Decoy:
     def __init__(self, db, db_type):
         self.df = db
-        self.seqs, self.entries = self.__get_seqs()
-        self.reversed = []
         self.type = db_type
-        self.__create_dir()
         self.path = sys.path[0]
 
-    def __create_dir(self):
-        if not os.path.exists(f"{self.type}/Percolator"):
-            cmd_dir = f'mkdir {self.type}/Percolator'
-            os.system(cmd_dir)
+        self._create_dir()
+        self.seqs, self.entries = self._get_seqs()
 
-    def __get_seqs(self):
+    def _create_dir(self):
+        dir_path = pathlib.Path(f"{self.type}/Percolator")
+        dir_path.mkdir(exist_ok=True, parents=True)
+
+    def _get_seqs(self):
+        """Extract the sequences from the fasta file, automatically reversing
+        them.
+        """
+        records = SeqIO.parse(self.df, 'fasta')
         seqs = []
         entries = []
-        records = SeqIO.parse(self.df, 'fasta')
         for record in records:
-            seqs.append(record.seq)
+            seqs.append(record.seq[-2::-1])
             entries.append(str(record.description))
         return seqs, entries
 
-    def reverse_sequences(self):
-        """ Reverses the amino acid sequence of a protein, except for the aa in the c-terminal. """
-        for seq in self.seqs:
-            # cterminus = seq[len(seq)-1]
-            to_reverse = seq[:-1]
-            reversed = to_reverse[::-1]
-            # reversed += cterminus
-            self.reversed.append(reversed)
-        return self
+    # def reverse_sequences(self):
+    #     """Reverse the amino acid sequence of a protein, except for the aa in
+    #     the c-terminal.
+    #     """
+    #     for seq in self.seqs:
+    #         cterminus = seq[len(seq)-1]
+    #         to_reverse = seq[:-1]
+    #         reversed = to_reverse[::-1]
+    #         reversed += cterminus
+    #         self.reversed.append(seq[-2::-1])
+    #     return self
 
     def add_contaminants(self):
         seqs = []
         records = SeqIO.parse(f'{self.path}/seqlib/contaminants.txt', 'fasta')
         for record in records:
-            seqs.append(f">{record.id}\n{record.seq}\n")
+            seq = (
+                f">{record.id}\n{record.seq}\n"
+                .replace("B", "")
+                .replace("X", "")
+                .replace("Z", "")
+            )
+            seqs.append(seq)
         return seqs
 
     def to_fasta(self):
-        out = []
-        for i in range(len(self.reversed)):
-            string = f">decoy_{self.entries[i]}\n{self.reversed[i]}\n"
-            out.append(string)
-        seqs = self.add_contaminants()
-        for seq in seqs:
-            to_add = seq.replace("B", "")
-            to_add = to_add.replace("X", "")
-            to_add = to_add.replace("Z", "")
-            out.append(to_add)
+        out = [
+            f">decoy_{entry}\n{seq}\n"
+            for entry, seq
+            in zip(self.entries, self.seqs)
+        ]
+        out.extend(self.add_contaminants())
         with open(f"{self.type}/Percolator/{self.type}_decoy.fasta", 'w') as fa:
             fa.writelines(out)
         return self
