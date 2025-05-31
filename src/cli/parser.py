@@ -231,7 +231,8 @@ _ms_parser.add_argument(
 _ms_parser.add_argument(
     '--search_engine', '-E',
     help='Select the search engine for the PMS search.',
-    choices=('MS-GF+', 'CometMS')
+    choices=('MS-GF+', 'CometMS'),
+    default='MS-GF+'
 )
 
 # MS groups
