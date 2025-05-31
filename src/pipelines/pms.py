@@ -39,7 +39,7 @@ class PostMSPipeline(object):
 
     def _run_percolator(self):
         perc = PercolatorProcessing(folder=self.folder, filetype=self.filetype)
-        perc.create_metafiles().convert_to_pin()
+        # perc.create_metafiles().convert_to_pin()
         perc.percolate()
 
     def _process_percolator(self):
