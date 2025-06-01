@@ -23,7 +23,7 @@ import sys
 import pathlib
 
 from src.search_engine import SearchEngine
-from src import utils
+from src import cli
 
 
 class PeptideSearch:
@@ -57,25 +57,23 @@ class PeptideSearch:
         self.loop_search()
 
     def loop_search(self):
-        if self.args.search_engine == 'CometMS':
-            comet_db = pathlib.Path(
-                f'{self.database_type}_comet_database.fasta'
-            )
-            utils.concat_fastas(
-                comet_db,
-                self.database_file,
-                self.decoy_file
-            )
-            databases = [comet_db]
-        else:
-            databases = [self.database_file, self.decoy_file]
-
-        for database in databases:
-            self.search_engine.run(
+        dbs = self.search_engine.get_databases(
+            self.database_type, self.database_file, self.decoy_file
+        )
+        for database in dbs:
+            result = self.search_engine.run(
                 self.database_type,
                 self.ms_folder,
                 database
             )
+            print(result.stdout)
+            if result.stderr:
+                cli.stderr(result.stderr)
+            if (code := result.returncode) != 0:
+                cli.exit(
+                    3,
+                    f'search engine finished with non-zero return code: {code}'
+                )
 
         self.search_engine.save_to_pin(
             self.database_type,

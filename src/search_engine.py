@@ -27,6 +27,8 @@ import typing as t
 
 import pandas as pd
 
+from src import utils
+
 
 class SearchEngine(t.Protocol):
     def __init__(self, args: argparse.Namespace):
@@ -39,6 +41,21 @@ class SearchEngine(t.Protocol):
         args : Namespace
             An :obj:`argparse.Namespace` object used to get the SearchEngine's
             run configs from the cli arguments.
+        """
+        ...
+
+    def get_databases(
+        self,
+        folder: str,
+        database: p.Path,
+        decoy: p.Path
+    ) -> t.Generator[p.Path, None, None]:
+        """Generate databases for a specific search engine.
+
+        Returns
+        -------
+        Generator[p.Path, None, None]
+            A generator that yields paths to the databases to be searched.
         """
         ...
 
@@ -87,9 +104,25 @@ class SearchEngine(t.Protocol):
 
 
 class CometMS:
+    ARGS = [
+        'peptide_mass_tolerance_lower', 'peptide_mass_units',
+        'mass_type_fragment', 'precursor_mass_tolerance',
+        'isotope_error',
+    ]
+
     def __init__(self, args: argparse.Namespace):
         self.args = args
         self.params = self._get_params()
+
+    def get_databases(
+        self,
+        folder: str,
+        database: p.Path,
+        decoy: p.Path
+    ) -> t.Generator[p.Path, None, None]:
+        comet_db = p.Path(f'{folder}_comet_database.fasta')
+        utils.concat_fastas(comet_db, database, decoy)
+        yield comet_db
 
     def run(
         self,
@@ -130,15 +163,11 @@ class CometMS:
         )
 
     def _get_params(self) -> dict[str, str]:
-        pipeline_args = (
-            'outdir', 'mode', 'mass_spec', 'processes', 'transcriptome', 'xmx',
-            'threads'
-        )
         param_dict = {
             key: value
             for key, value
             in vars(self.args).items()
-            if key not in pipeline_args
+            if key in CometMS.ARGS
         }
         param_dict['output_pepxmlfile'] = '0'
         param_dict['output_percolatorfile'] = '1'
@@ -157,9 +186,24 @@ class CometMS:
 
 
 class MSGFPlus:
+    ARGS = [
+        "t", "ti", "tasks", "m", "inst", "e", "protocol", "ntt", "mod",
+        "minLength", "maxLength", "minCharge", "maxCharge", "n", "ccm",
+        "maxMissedCleavages", "numMods"
+    ]
+
     def __init__(self, args: argparse.Namespace):
         self.args = args
         self.base_command = self._build_command()
+
+    def get_databases(
+        self,
+        folder: str,
+        database: p.Path,
+        decoy: p.Path
+    ) -> t.Generator[p.Path, None, None]:
+        yield database
+        yield decoy
 
     def run(
         self,
@@ -230,12 +274,8 @@ class MSGFPlus:
             '-tda', '0',
             '-addFeatures', '1'
         ]
-        pipeline_args = (
-            'outdir', 'mode', 'mass_spec', 'processes', 'transcriptome', 'xmx',
-            'threads'
-        )
         for key, value in vars(self.args).items():
-            if key not in pipeline_args and value is not None:
+            if key in MSGFPlus.ARGS and value is not None:
                 cmd.extend([f'-{key}', value])
         if self.args.threads is not None:
             cmd.extend(['-thread', str(self.args.threads)])
