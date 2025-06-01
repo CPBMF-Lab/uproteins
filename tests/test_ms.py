@@ -27,12 +27,12 @@ from tests import resources
 from src import uproteins
 
 
-def test_ms_mode(tmp_path):
+def test_ms_mode(database_folder):
     mzml = rsrc.files(resources).joinpath("mzml")
 
     args = [
         'ms',
-        '--outdir', str(tmp_path),
+        '--outdir', str(database_folder),
         '--Mass_spec', str(mzml),
         '--inst', '2',
         '--t', '800ppm',
@@ -41,13 +41,13 @@ def test_ms_mode(tmp_path):
     uproteins(args)
 
     genome_pin_path: pathlib.Path = (
-        tmp_path
-        / 'Transcriptome'
+        database_folder
+        / 'Genome'
         / 'Percolator'
-        / 'Transcriptome_pin.txt'
+        / 'Genome_pin.txt'
     )
     transcriptome_pin_path: pathlib.Path = (
-        tmp_path
+        database_folder
         / 'Transcriptome'
         / 'Percolator'
         / 'Transcriptome_pin.txt'

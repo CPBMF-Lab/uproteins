@@ -20,9 +20,13 @@
 
 import pathlib
 import random
+import shutil
+from importlib import resources as rsrc
 import typing as t
 
 import pytest
+
+from tests import resources
 
 
 @pytest.fixture
@@ -98,3 +102,12 @@ def database_args(tmp_path, tmp_file) -> t.Generator[list[str], None, None]:
 
     yield args
     reset()
+
+
+@pytest.fixture
+def database_folder(tmp_path) -> pathlib.Path:
+    """Generate and return a directory containing results from database mode.
+    """
+    database = rsrc.files(resources).joinpath('database_results')
+    shutil.copytree(str(database), tmp_path, dirs_exist_ok=True)
+    return tmp_path
