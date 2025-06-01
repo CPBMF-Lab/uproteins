@@ -131,6 +131,7 @@ class CometMS:
         database: p.Path
     ) -> subprocess.CompletedProcess[str]:
         self.params['database_name'] = str(database.absolute())
+        self.params['output_suffix'] = f'_{folder}'
         comet_path = (
             f'{sys.path[0]}/dependencies/'
             f'CometMS/{folder}/comet.linux.exe'
@@ -140,7 +141,7 @@ class CometMS:
         cmd = [comet_path, input_files]
         result = subprocess.run(cmd, text=True, capture_output=True)
         for file in mzml_path.iterdir():
-            if file.suffix == '.pin':
+            if file.name.endswith(f'_{folder}.pin'):
                 shutil.copy(file, folder)
         return result
 
@@ -210,7 +211,7 @@ class MSGFPlus:
         folder: str,
         mzml_path: p.Path,
         database: p.Path
-    ) -> subprocess.CompletedProcess[str]:
+    ) -> subprocess.CompletedProcess:
         output = p.Path(
             f'{folder}/{database.with_suffix(".mzid").name}'
         )
@@ -220,6 +221,7 @@ class MSGFPlus:
             '-s', str(mzml_path),
             '-o', str(output)
         ]
+        print(f"Running MS-GF+: '{' '.join(cmd)}'.")
         result = subprocess.run(cmd, capture_output=True, text=True)
         return result
 
@@ -238,7 +240,8 @@ class MSGFPlus:
             '-F', str(database) + ',' + str(decoy),
             '-c', '2'
         ]
-        subprocess.run(cmd_pin, text=True, check=True)
+        print(f"Running msgf2pin: '{' '.join(cmd_pin)}'.")
+        subprocess.run(cmd_pin, check=True)
 
     def _generate_metafiles(self, folder: str) -> tuple[p.Path, p.Path]:
         folder_path = p.Path(folder)
