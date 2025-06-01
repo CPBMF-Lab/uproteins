@@ -21,6 +21,8 @@
 import pathlib
 from importlib import resources as rsrc
 
+import pandas as pd
+
 from src import uproteins
 from tests import resources
 
@@ -91,7 +93,7 @@ def test_full_run(tmp_path):
     # uproteins(validate_args)
 
     # Paths to the output
-    genome_pre: pathlib.Path = (
+    genome_pre_path: pathlib.Path = (
         tmp_path
         / 'Genome'
         / 'Results'
@@ -104,7 +106,7 @@ def test_full_run(tmp_path):
         / 'genome_post_validation_results.txt'
     )
 
-    transcriptome_pre: pathlib.Path = (
+    transcriptome_pre_path: pathlib.Path = (
         tmp_path
         / 'Transcriptome'
         / 'Results'
@@ -118,14 +120,14 @@ def test_full_run(tmp_path):
     )
 
     # Make sure the result files were created
-    assert genome_pre.is_file()
+    assert genome_pre_path.is_file()
     # assert genome_post.is_file()
-    assert transcriptome_pre.is_file()
+    assert transcriptome_pre_path.is_file()
     # assert transcriptome_post.is_file()
 
     # And that they have the expect results
     with rsrc.path(resources, 'results') as results:
-        ok_genome_pre = (
+        ok_genome_pre_path = (
             results
             / 'Genome'
             / 'Results'
@@ -138,7 +140,7 @@ def test_full_run(tmp_path):
             / 'genome_post_validation_results.txt'
         )
 
-        ok_transcriptome_pre = (
+        ok_transcriptome_pre_path = (
             results
             / 'Transcriptome'
             / 'Results'
@@ -151,14 +153,35 @@ def test_full_run(tmp_path):
             / 'transcriptome_post_validation_results.txt'
         )
 
-        assert genome_pre.read_text() == ok_genome_pre.read_text()
-        assert (
-            transcriptome_pre.read_text()
-            == ok_transcriptome_pre.read_text()
+        genome_pre = pd.read_csv(
+            genome_pre_path,
+            comment='#',
+            sep='\t'
+        )
+        ok_genome_pre = pd.read_csv(
+            ok_genome_pre_path,
+            comment='#',
+            sep='\t'
         )
 
-        # assert genome_post.read_text() == ok_genome_post.read_text()
-        # assert (
-        #     transcriptome_post.read_text()
-        #     == ok_transcriptome_post.read_text()
-        # )
+        transcriptome_pre = pd.read_csv(
+            transcriptome_pre_path,
+            comment='#',
+            sep='\t'
+        )
+        ok_transcriptome_pre = pd.read_csv(
+            ok_transcriptome_pre_path,
+            comment='#',
+            sep='\t'
+        )
+
+        pd.testing.assert_frame_equal(
+            genome_pre,
+            ok_genome_pre,
+            check_like=True
+        )
+        pd.testing.assert_frame_equal(
+            transcriptome_pre,
+            ok_transcriptome_pre,
+            check_like=True
+        )
