@@ -231,11 +231,11 @@ class MSGFPlus:
         database: p.Path,
         decoy: p.Path
     ) -> None:
-        target, decoy = self._generate_metafiles(folder)
+        target_meta, decoy_meta = self._generate_metafiles(folder)
         msgf2pin_path = p.Path('msgf2pin')
         cmd_pin = [
             str(msgf2pin_path),
-            str(target), str(decoy),
+            str(target_meta), str(decoy_meta),
             '-o', f'{folder}/Percolator/{folder}_pin.txt',
             '-F', str(database) + ',' + str(decoy),
             '-c', '2'
