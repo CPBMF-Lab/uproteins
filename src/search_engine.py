@@ -22,6 +22,7 @@ import argparse
 import subprocess
 import sys
 import shutil
+import os
 import pathlib as p
 import typing as t
 
@@ -212,17 +213,18 @@ class MSGFPlus:
         mzml_path: p.Path,
         database: p.Path
     ) -> subprocess.CompletedProcess:
-        output = p.Path(
-            f'{folder}/{database.with_suffix(".mzid").name}'
-        )
         cmd = [
             *self.base_command,
             '-d', str(database),
             '-s', str(mzml_path),
-            '-o', str(output)
         ]
         print(f"Running MS-GF+: '{' '.join(cmd)}'.")
         result = subprocess.run(cmd, capture_output=True, text=True)
+        cmd_move = (
+            f'mv {mzml_path}/*.mzid '
+            f'{folder}/{database.with_suffix(".mzid").name}'
+        )
+        os.system(cmd_move)
         return result
 
     def save_to_pin(
