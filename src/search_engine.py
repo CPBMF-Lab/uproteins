@@ -22,7 +22,6 @@ import argparse
 import subprocess
 import sys
 import shutil
-import os
 import pathlib as p
 import typing as t
 
@@ -188,7 +187,7 @@ class CometMS:
 
 
 class MSGFPlus:
-    ARGS = [
+    _ARGS = [
         "t", "ti", "tasks", "m", "inst", "e", "protocol", "ntt", "mod",
         "minLength", "maxLength", "minCharge", "maxCharge", "n", "ccm",
         "maxMissedCleavages", "numMods"
@@ -220,11 +219,13 @@ class MSGFPlus:
         ]
         print(f"Running MS-GF+: '{' '.join(cmd)}'.")
         result = subprocess.run(cmd, capture_output=True, text=True)
-        cmd_move = (
-            f'mv {mzml_path}/*.mzid '
-            f'{folder}/{database.with_suffix(".mzid").name}'
-        )
-        os.system(cmd_move)
+        for path in p.Path('.').iterdir():
+            if path.suffix == '.mzid':
+                shutil.move(
+                    path,
+                    f'{folder}/{path.with_suffix("").name}'
+                    f'_{database.with_suffix("mzid").name}'
+                )
         return result
 
     def save_to_pin(
@@ -280,7 +281,7 @@ class MSGFPlus:
             '-addFeatures', '1'
         ]
         for key, value in vars(self.args).items():
-            if key in MSGFPlus.ARGS and value is not None:
+            if key in MSGFPlus._ARGS and value is not None:
                 cmd.extend([f'-{key}', value])
         if self.args.threads is not None:
             cmd.extend(['-thread', str(self.args.threads)])
