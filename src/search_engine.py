@@ -104,7 +104,7 @@ class SearchEngine(t.Protocol):
 
 
 class CometMS:
-    ARGS = [
+    _ARGS = [
         'peptide_mass_tolerance_lower', 'peptide_mass_units',
         'mass_type_fragment', 'precursor_mass_tolerance',
         'isotope_error',
@@ -142,7 +142,7 @@ class CometMS:
         result = subprocess.run(cmd, text=True, capture_output=True)
         for file in mzml_path.iterdir():
             if file.name.endswith(f'_{folder}.pin'):
-                shutil.copy(file, folder)
+                shutil.move(file, folder)
         return result
 
     def save_to_pin(
@@ -168,7 +168,7 @@ class CometMS:
             key: value
             for key, value
             in vars(self.args).items()
-            if key in CometMS.ARGS
+            if key in CometMS._ARGS
         }
         param_dict['output_pepxmlfile'] = '0'
         param_dict['output_percolatorfile'] = '1'
@@ -183,7 +183,7 @@ class CometMS:
             'w'
         ) as params:
             for key, value in self.params.items():
-                params.write(f'{key} = {value}')
+                params.write(f'{key} = {value}\n')
 
 
 class MSGFPlus:
