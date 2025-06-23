@@ -195,8 +195,8 @@ def test_external_assembly(tmp_path):
     proteome = rsrc.files(resources).joinpath("proteome.fasta")
     gtf = rsrc.files(resources).joinpath("mtb.gtf")
     mzml = rsrc.files(resources).joinpath("mzml")
-    assembled = rsrc.files(resources).joinpath("assembled.gtf")
-    transcripts = rsrc.files(resources).joinpath("HISAT/transcripts.fasta")
+    assembled = rsrc.files(resources).joinpath("results/assembled.gtf")
+    transcripts = rsrc.files(resources).joinpath("results/HISAT/transcripts.fasta")
     rrna = rsrc.files(resources).joinpath("rrna.fna")
 
     database_args = [
