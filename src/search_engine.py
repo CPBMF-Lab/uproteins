@@ -224,7 +224,7 @@ class MSGFPlus:
                 shutil.move(
                     path,
                     f'{folder}/{path.with_suffix("").name}'
-                    f'_{database.with_suffix("mzid").name}'
+                    f'_{database.with_suffix(".mzid").name}'
                 )
         return result
 
