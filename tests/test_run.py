@@ -207,7 +207,7 @@ def test_external_assembly(tmp_path):
         '--starts', 'ATG,GTG,TTG,CTG',
         '--minsize', '30',
         '--maxsize', '300',
-        '--Transcriptome', 'YES'
+        '--Transcriptome', 'YES',
         '--external_transcriptome', str(transcripts),
         '--external_gtf', str(assembled),
     ]
