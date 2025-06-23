@@ -22,9 +22,13 @@ import pathlib
 from importlib import resources as rsrc
 
 import pandas as pd
+import pytest
 
 from tests import resources
 from src import uproteins
+
+
+pytestmark = pytest.mark.ms
 
 
 def test_ms_mode(database_folder):

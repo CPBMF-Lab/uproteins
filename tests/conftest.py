@@ -111,3 +111,8 @@ def database_folder(tmp_path) -> pathlib.Path:
     database = rsrc.files(resources).joinpath('database_results')
     shutil.copytree(str(database), tmp_path, dirs_exist_ok=True)
     return tmp_path
+
+
+@pytest.fixture(scope='class')
+def outdir(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
+    return tmp_path_factory.mktemp('outdir')

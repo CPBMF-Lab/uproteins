@@ -23,9 +23,13 @@ from importlib import resources as rsrc
 
 import pandas as pd
 from Bio import SeqIO
+import pytest
 
 from src import uproteins, cli, assembly  # noqa: F401
 from tests import resources
+
+
+pytestmark = pytest.mark.assembly
 
 
 def test_assembly_parser(assembly_args, tmp_file):

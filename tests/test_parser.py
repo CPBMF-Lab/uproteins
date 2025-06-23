@@ -35,6 +35,8 @@ from src.cli import _types
 # Most parameter validation is made by argparse itself or the _types submodule,
 # so `validate_mode` functions have fairly few cases they test for
 
+pytestmark = pytest.mark.parser
+
 
 @pytest.fixture(params=[
     [],

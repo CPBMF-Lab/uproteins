@@ -22,12 +22,14 @@ import pathlib
 from importlib import resources as rsrc
 
 import pandas as pd
+import pytest
 
 from src import uproteins
 from tests import resources
 
 
 # Since the validate method requires a venv, it is not being run at the moment
+@pytest.mark.fullrun
 def test_full_run(tmp_path):
     genome = rsrc.files(resources).joinpath("genome.fasta")
     proteome = rsrc.files(resources).joinpath("proteome.fasta")
@@ -60,6 +62,154 @@ def test_full_run(tmp_path):
         '--minsize', '30',
         '--maxsize', '300',
         '--Transcriptome', 'YES'
+    ]
+    uproteins(database_args)
+
+    ms_args = [
+        'ms',
+        '--outdir', str(tmp_path),
+        '--Mass_spec', str(mzml),
+        '--inst', '2',
+        '--t', '800ppm',
+        '--Transcriptome', 'YES'
+    ]
+    uproteins(ms_args)
+
+    postms_args = [
+        'postms',
+        '--outdir', str(tmp_path),
+        '--genome', str(genome),
+        '--proteome', str(proteome),
+        '--rrna', str(rrna),
+        '--gff', str(gtf),
+        '--Mass_spec', str(mzml),
+        '--Transcriptome', 'YES'
+    ]
+    uproteins(postms_args)
+
+    validate_args = [
+        'validate',
+        '--outdir', str(tmp_path),
+        '--transcriptome'
+    ]
+    # uproteins(validate_args)
+
+    # Paths to the output
+    genome_pre_path: pathlib.Path = (
+        tmp_path
+        / 'Genome'
+        / 'Results'
+        / 'genome_pre_validation_results.txt'
+    )
+    genome_post: pathlib.Path = (
+        tmp_path
+        / 'Genome'
+        / 'Results'
+        / 'genome_post_validation_results.txt'
+    )
+
+    transcriptome_pre_path: pathlib.Path = (
+        tmp_path
+        / 'Transcriptome'
+        / 'Results'
+        / 'transcriptome_pre_validation_results.txt'
+    )
+    transcriptome_post: pathlib.Path = (
+        tmp_path
+        / 'Transcriptome'
+        / 'Results'
+        / 'transcriptome_post_validation_results.txt'
+    )
+
+    # Make sure the result files were created
+    assert genome_pre_path.is_file()
+    # assert genome_post.is_file()
+    assert transcriptome_pre_path.is_file()
+    # assert transcriptome_post.is_file()
+
+    # And that they have the expect results
+    with rsrc.path(resources, 'results') as results:
+        ok_genome_pre_path = (
+            results
+            / 'Genome'
+            / 'Results'
+            / 'genome_pre_validation_results.txt'
+        )
+        ok_genome_post = (
+            results
+            / 'Genome'
+            / 'Results'
+            / 'genome_post_validation_results.txt'
+        )
+
+        ok_transcriptome_pre_path = (
+            results
+            / 'Transcriptome'
+            / 'Results'
+            / 'transcriptome_pre_validation_results.txt'
+        )
+        ok_transcriptome_post = (
+            results
+            / 'Transcriptome'
+            / 'Results'
+            / 'transcriptome_post_validation_results.txt'
+        )
+
+        genome_pre = pd.read_csv(
+            genome_pre_path,
+            comment='#',
+            sep='\t'
+        )
+        ok_genome_pre = pd.read_csv(
+            ok_genome_pre_path,
+            comment='#',
+            sep='\t'
+        )
+
+        transcriptome_pre = pd.read_csv(
+            transcriptome_pre_path,
+            comment='#',
+            sep='\t'
+        )
+        ok_transcriptome_pre = pd.read_csv(
+            ok_transcriptome_pre_path,
+            comment='#',
+            sep='\t'
+        )
+
+        pd.testing.assert_frame_equal(
+            genome_pre,
+            ok_genome_pre,
+            check_like=True
+        )
+        pd.testing.assert_frame_equal(
+            transcriptome_pre,
+            ok_transcriptome_pre,
+            check_like=True
+        )
+
+
+@pytest.mark.fullrun
+def test_external_assembly(tmp_path):
+    genome = rsrc.files(resources).joinpath("genome.fasta")
+    proteome = rsrc.files(resources).joinpath("proteome.fasta")
+    gtf = rsrc.files(resources).joinpath("mtb.gtf")
+    mzml = rsrc.files(resources).joinpath("mzml")
+    assembled = rsrc.files(resources).joinpath("assembled.gtf")
+    transcripts = rsrc.files(resources).joinpath("HISAT/transcripts.fasta")
+    rrna = rsrc.files(resources).joinpath("rrna.fna")
+
+    database_args = [
+        'database',
+        '--outdir', str(tmp_path),
+        '--genome', str(genome),
+        '--proteome', str(proteome),
+        '--starts', 'ATG,GTG,TTG,CTG',
+        '--minsize', '30',
+        '--maxsize', '300',
+        '--Transcriptome', 'YES'
+        '--external_transcriptome', str(transcripts),
+        '--external_gtf', str(assembled),
     ]
     uproteins(database_args)
 
