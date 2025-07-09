@@ -25,13 +25,13 @@ dependencies = [
 
 [project.optional-dependencies]
 cli = [ "pyfiglet>=1.0.2" ]
+test = [
+    "pytest>=8.4.1,<9.0.0",
+    "snakeviz>=2.2.2,<3.0.0",
+]
 
 [tool.poetry]
 package-mode = false
-
-[tool.poetry.group.test.dependencies]
-pytest = "^8.4.1"
-snakeviz = "^2.2.2"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
