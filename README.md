@@ -21,3 +21,7 @@ Eduardo Vieira de Souza, Pedro Ferrari Dalberto, Vinicius Pellisoli Machado, Adr
 
 We have also published a chapter in Methods in Molecular Biology (Protein Informatics) describing the usage of this pipeline on publicly available data (https://link.springer.com/protocol/10.1007/978-1-0716-4007-4_2). If the tutorial was useful, please consider also citing it in your research:
 de Souza EV, Bizarro CV. Identification of Novel Bacterial Microproteins Encoded by Small Open Reading Frames Using a Computational Proteogenomics Workflow. InProtein Bioinformatics 2024 Jul 13 (pp. 19-34). New York, NY: Springer US.
+
+We published another paper using µProteInS on Mycobacterium tuberculosis datasets, where we exemplify other possible downstream analyses after running the pipeline. It is also useful to understand how to make use of the different layers of validation provided by µProteInS:
+de Souza, E.V., Dalberto, P.F., Miranda, A.C. et al. Large-scale proteogenomics characterization of microproteins in Mycobacterium tuberculosis. Sci Rep 14, 31186 (2024). https://doi.org/10.1038/s41598-024-82465-w
+
