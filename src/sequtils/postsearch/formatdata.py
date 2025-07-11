@@ -41,22 +41,21 @@ class LinkData(object):
                                      'SpecEValue': [], 'EValue': []}
         self.joinedDataFrame = pd.DataFrame(data)
 
-
     def __get_peptide_scans(self):
         """ retrieves the scan number for each peptide in the peptide data frame. """
         scans = []
         files = []
         for psm in self.pepIds:
             pos1 = psm.find("SII") + 4
-            pos0 = pos1 - 5
+            # pos0 = pos1 - 5
             pos2 = psm[pos1:].find("_")
             scan = psm[pos1:][:pos2]
             scans.append(scan)
+            pos0 = psm.find('_genome_database')
             file = f'{psm[:pos0]}.mzML'
             files.append(file)
         self.peptideDataFrame.insert(2, "scanNumber", scans)
         self.peptideDataFrame.insert(0, "file", files)
-
 
     def filter_msgf(self, output):
         """ filters MSGF results based on percolator output. """
