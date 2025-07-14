@@ -131,14 +131,19 @@ class GenomeCoordinatesRNA(object):
                 # only for proteins in the transcriptome gff file
                 if 'ORF' in protein:
                     if 'gene' not in protein:
-                        pos1 = protein.find("_")
-                        pos2 = protein.rfind(".")
-                        name = protein[pos1+1:pos2]
+                        # pos1 = protein.find("_")
+                        pos1 = protein.find("_") + 1
+                        # pos2 = protein.find(".")
+                        pos2 = protein.find("_", pos1)
+                        name = protein[pos1:pos2]
                     else:
-                        pos1 = protein.find("_gene-") + 6
-                        pos2 = protein.rfind("_", pos1, -1)
-                        pos3 = protein.rfind("_", pos1, pos2)
-                        name = protein[pos1:pos3]
+                        # pos1 = protein.find("_gene-") + 6
+                        pos1 = protein.find("_gene-") + 1
+                        # pos2 = protein.rfind("_", pos1, -1)
+                        pos2 = protein.find("_", pos1)
+                        # pos3 = protein.rfind("_", pos1, pos2)
+                        # name = protein[pos1:pos3]
+                        name = proteins[pos1:pos2]
                     if name in self.stringTieDict:
                         start = self.stringTieDict[name].start
                         end = self.stringTieDict[name].end
