@@ -21,6 +21,9 @@
 import pathlib
 from importlib import resources as rsrc
 
+import pandas as pd
+import pytest
+
 from src import uproteins
 from tests import resources
 
@@ -118,9 +121,9 @@ def test_full_run(tmp_path):
     )
 
     # Make sure the result files were created
-    assert genome_pre.is_file()
+    assert genome_pre_path.is_file()
     # assert genome_post.is_file()
-    assert transcriptome_pre.is_file()
+    assert transcriptome_pre_path.is_file()
     # assert transcriptome_post.is_file()
 
     # And that they have the expect results
