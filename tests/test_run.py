@@ -29,6 +29,7 @@ from tests import resources
 
 
 # Since the validate method requires a venv, it is not being run at the moment
+@pytest.mark.fullrun
 def test_full_run(tmp_path):
     genome = rsrc.files(resources).joinpath("genome.fasta")
     proteome = rsrc.files(resources).joinpath("proteome.fasta")
