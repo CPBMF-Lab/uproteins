@@ -32,11 +32,16 @@ def tmp_file(tmp_path: pathlib.Path) -> pathlib.Path:
     return file
 
 
+@pytest.fixture(scope='class')
+def class_dir(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
+    return tmp_path_factory.mktemp()
+
+
 @pytest.fixture
-def inexistent_path() -> pathlib.Path:
+def inexistent_path(tmp_path) -> pathlib.Path:
     while True:
         random_nums = [str(random.randint(1, 10)) for _ in range(10)]
-        path = pathlib.Path(''.join(random_nums))
+        path = tmp_path / pathlib.Path(''.join(random_nums))
         if not path.exists():
             return path
 

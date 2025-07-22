@@ -39,6 +39,7 @@ def test_full_run(tmp_path):
     read2 = rsrc.files(resources).joinpath("ERR262982.fastq")
     read3 = rsrc.files(resources).joinpath("ERR262983.fastq")
     rrna = rsrc.files(resources).joinpath("rrna.fna")
+    results = rsrc.files(resources).joinpath("results")
 
     assembly_args = [
         'assembly',
@@ -128,76 +129,76 @@ def test_full_run(tmp_path):
     # assert transcriptome_post.is_file()
 
     # And that they have the expect results
-    with rsrc.path(resources, 'results') as results:
-        ok_genome_pre_path = (
-            results
-            / 'Genome'
-            / 'Results'
-            / 'genome_pre_validation_results.txt'
-        )
-        ok_genome_post_path = (
-            results
-            / 'Genome'
-            / 'Results'
-            / 'genome_post_validation_results.txt'
-        )
+    ok_genome_pre_path = (
+        results
+        / 'Genome'
+        / 'Results'
+        / 'genome_pre_validation_results.txt'
+    )
+    ok_genome_post_path = (
+        results
+        / 'Genome'
+        / 'Results'
+        / 'genome_post_validation_results.txt'
+    )
 
-        ok_transcriptome_pre_path = (
-            results
-            / 'Transcriptome'
-            / 'Results'
-            / 'transcriptome_pre_validation_results.txt'
-        )
-        ok_transcriptome_post_path = (
-            results
-            / 'Transcriptome'
-            / 'Results'
-            / 'transcriptome_post_validation_results.txt'
-        )
+    ok_transcriptome_pre_path = (
+        results
+        / 'Transcriptome'
+        / 'Results'
+        / 'transcriptome_pre_validation_results.txt'
+    )
+    ok_transcriptome_post_path = (
+        results
+        / 'Transcriptome'
+        / 'Results'
+        / 'transcriptome_post_validation_results.txt'
+    )
 
-        genome_pre = pd.read_csv(
-            genome_pre_path,
-            comment='#',
-            sep='\t'
-        )
-        ok_genome_pre = pd.read_csv(
-            ok_genome_pre_path,
-            comment='#',
-            sep='\t'
-        )
+    genome_pre = pd.read_csv(
+        genome_pre_path,
+        comment='#',
+        sep='\t'
+    )
+    ok_genome_pre = pd.read_csv(
+        ok_genome_pre_path,  # pyright: ignore
+        comment='#',
+        sep='\t'
+    )
 
-        transcriptome_pre = pd.read_csv(
-            transcriptome_pre_path,
-            comment='#',
-            sep='\t'
-        )
-        ok_transcriptome_pre = pd.read_csv(
-            ok_transcriptome_pre_path,
-            comment='#',
-            sep='\t'
-        )
+    transcriptome_pre = pd.read_csv(
+        transcriptome_pre_path,
+        comment='#',
+        sep='\t'
+    )
+    ok_transcriptome_pre = pd.read_csv(
+        ok_transcriptome_pre_path,  # pyright: ignore
+        comment='#',
+        sep='\t'
+    )
 
-        pd.testing.assert_frame_equal(
-            genome_pre,
-            ok_genome_pre,
-            check_like=True
-        )
-        pd.testing.assert_frame_equal(
-            transcriptome_pre,
-            ok_transcriptome_pre,
-            check_like=True
-        )
+    pd.testing.assert_frame_equal(
+        genome_pre,
+        ok_genome_pre,
+        check_like=True
+    )
+    pd.testing.assert_frame_equal(
+        transcriptome_pre,
+        ok_transcriptome_pre,
+        check_like=True
+    )
 
 
 @pytest.mark.fullrun
 def test_external_assembly(tmp_path):
+    assembled = rsrc.files(resources).joinpath("assembled.gtf")
+    transcripts = rsrc.files(resources).joinpath("transcripts.fasta")
     genome = rsrc.files(resources).joinpath("genome.fasta")
     proteome = rsrc.files(resources).joinpath("proteome.fasta")
     gtf = rsrc.files(resources).joinpath("mtb.gtf")
     mzml = rsrc.files(resources).joinpath("mzml")
-    assembled = rsrc.files(resources).joinpath("results/assembled.gtf")
-    transcripts = rsrc.files(resources).joinpath("results/HISAT/transcripts.fasta")
     rrna = rsrc.files(resources).joinpath("rrna.fna")
+    results = rsrc.files(resources).joinpath("results")
 
     database_args = [
         'database',
@@ -276,62 +277,61 @@ def test_external_assembly(tmp_path):
     # assert transcriptome_post.is_file()
 
     # And that they have the expect results
-    with rsrc.path(resources, 'results') as results:
-        ok_genome_pre_path = (
-            results
-            / 'Genome'
-            / 'Results'
-            / 'genome_pre_validation_results.txt'
-        )
-        ok_genome_post = (
-            results
-            / 'Genome'
-            / 'Results'
-            / 'genome_post_validation_results.txt'
-        )
+    ok_genome_pre_path = (
+        results
+        / 'Genome'
+        / 'Results'
+        / 'genome_pre_validation_results.txt'
+    )
+    ok_genome_post = (
+        results
+        / 'Genome'
+        / 'Results'
+        / 'genome_post_validation_results.txt'
+    )
 
-        ok_transcriptome_pre_path = (
-            results
-            / 'Transcriptome'
-            / 'Results'
-            / 'transcriptome_pre_validation_results.txt'
-        )
-        ok_transcriptome_post = (
-            results
-            / 'Transcriptome'
-            / 'Results'
-            / 'transcriptome_post_validation_results.txt'
-        )
+    ok_transcriptome_pre_path = (
+        results
+        / 'Transcriptome'
+        / 'Results'
+        / 'transcriptome_pre_validation_results.txt'
+    )
+    ok_transcriptome_post = (
+        results
+        / 'Transcriptome'
+        / 'Results'
+        / 'transcriptome_post_validation_results.txt'
+    )
 
-        genome_pre = pd.read_csv(
-            genome_pre_path,
-            comment='#',
-            sep='\t'
-        )
-        ok_genome_pre = pd.read_csv(
-            ok_genome_pre_path,
-            comment='#',
-            sep='\t'
-        )
+    genome_pre = pd.read_csv(
+        genome_pre_path,
+        comment='#',
+        sep='\t'
+    )
+    ok_genome_pre = pd.read_csv(
+        ok_genome_pre_path,  # pyright: ignore
+        comment='#',
+        sep='\t'
+    )
 
-        transcriptome_pre = pd.read_csv(
-            transcriptome_pre_path,
-            comment='#',
-            sep='\t'
-        )
-        ok_transcriptome_pre = pd.read_csv(
-            ok_transcriptome_pre_path,
-            comment='#',
-            sep='\t'
-        )
+    transcriptome_pre = pd.read_csv(
+        transcriptome_pre_path,
+        comment='#',
+        sep='\t'
+    )
+    ok_transcriptome_pre = pd.read_csv(
+        ok_transcriptome_pre_path,  # pyright: ignore
+        comment='#',
+        sep='\t'
+    )
 
-        pd.testing.assert_frame_equal(
-            genome_pre,
-            ok_genome_pre,
-            check_like=True
-        )
-        pd.testing.assert_frame_equal(
-            transcriptome_pre,
-            ok_transcriptome_pre,
-            check_like=True
-        )
+    pd.testing.assert_frame_equal(
+        genome_pre,
+        ok_genome_pre,
+        check_like=True
+    )
+    pd.testing.assert_frame_equal(
+        transcriptome_pre,
+        ok_transcriptome_pre,
+        check_like=True
+    )
