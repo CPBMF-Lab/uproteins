@@ -55,9 +55,7 @@ def postms_dir(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
     return base
 
 
-
-
-
+@pytest.mark.postms
 @pytest.mark.parametrize(
     'folder,filetype',
     [
