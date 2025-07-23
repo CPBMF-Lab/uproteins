@@ -103,17 +103,55 @@ class TestPostPercolator:
             / 'Percolator'
             / f'{filetype}_results_psm.txt'
         )
-        ok_results = (
-            data
-            / 'results'
-            / FILE_NAME
-        )
         monkeypatch.chdir(postms_dir)
         shutil.copy(initial_data, f'{folder}/Percolator')  # pyright: ignore
 
         # run
         postPerc.convert_output()
         results = pathlib.Path(FILE_NAME)
+        ok_results = data / 'results' / FILE_NAME
+
+        # Assert the expected files exist
+        assert results.is_file()
+        # Assert resulting data is what we expect
+        df = pd.read_csv(results, sep='\t')
+        ok_df = pd.read_csv(ok_results, sep='\t')  # pyright: ignore
+        pd.testing.assert_frame_equal(df, ok_df, check_like=True)
+
+    # This function tests both the `get_coordinates_genome` and
+    # `get_coordinates_rna` from the `PostPercolator` class. Using only one
+    # function for both allows us to take advantage of parametrized fixtures,
+    # simplifying the code.
+    def test_get_coordinates(
+        self,
+        folder: str,
+        filetype: str,
+        postms_dir: pathlib.Path,
+        monkeypatch: pytest.MonkeyPatch,
+        data: pathlib.Path,
+        postPerc: PostPercolator
+    ):
+        FILE_NAME = f'{folder}/post_perc/{filetype}_psm_coords.txt'
+
+        # setup
+        initial_data1 = (
+            data
+            / 'results'
+            / folder
+            / 'post_perc'
+            / f'{filetype}_converted_psm.txt'
+        )
+        initial_data2 = data / 'assembled.gtf'
+        monkeypatch.chdir(postms_dir)
+        shutil.copy(initial_data1, f'{folder}/post_perc')
+        shutil.copy(initial_data2, '.')
+
+        # run
+        if folder == 'Transcriptome': postPerc.get_coordinates_rna()
+        else: postPerc.get_coordinates_genome()
+
+        results = pathlib.Path(FILE_NAME)
+        ok_results = data / 'results' / FILE_NAME
 
         # Assert the expected files exist
         assert results.is_file()
@@ -141,17 +179,13 @@ class TestPostPercolator:
             / 'post_perc'
             / f'{filetype}_psm_coords.txt'
         )
-        ok_results = (
-            data
-            / 'results'
-            / FILE_NAME
-        )
         monkeypatch.chdir(postms_dir)
         shutil.copy(initial_data, f'{folder}/post_perc')  # pyright: ignore
 
         # run
         postPerc.filter_novel()
         results = pathlib.Path(FILE_NAME)
+        ok_results = data / 'results' / FILE_NAME
 
         # Assert the expected files exist
         assert results.is_file()
@@ -184,11 +218,6 @@ class TestPostPercolator:
             / 'results'
             / f'{filetype}_database.fasta'
         )
-        ok_results = (
-            data
-            / 'results'
-            / FILE_NAME
-        )
         monkeypatch.chdir(postms_dir)
         shutil.copy(initial_data1, f'{folder}/post_perc')  # pyright: ignore
         shutil.copy(initial_data2, '.')  # pyright: ignore
@@ -196,6 +225,7 @@ class TestPostPercolator:
         # run
         postPerc.protein_seqs()
         results = pathlib.Path(FILE_NAME)
+        ok_results = data / 'results' / FILE_NAME
 
         # Assert the expected files exist
         assert results.is_file()
@@ -230,11 +260,6 @@ class TestPostPercolator:
             / 'post_perc'
             / f'{filetype}_utps.txt'
         )
-        ok_results = (
-            data
-            / 'results'
-            / FILE_NAME
-        )
         monkeypatch.chdir(postms_dir)
         shutil.copy(initial_data1, f'{folder}/post_perc')  # pyright: ignore
         shutil.copy(initial_data2, f'{folder}/post_perc')  # pyright: ignore
@@ -242,6 +267,7 @@ class TestPostPercolator:
         # run
         postPerc.add_coordinates()
         results = pathlib.Path(FILE_NAME)
+        ok_results = data / 'results' / FILE_NAME
 
         # Assert the expected files exist
         assert results.is_file()

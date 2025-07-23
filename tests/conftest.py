@@ -49,9 +49,9 @@ def data(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
         └─ transcripts.fasta
     """
     data = rsrc.files(resources)
-    # data_dir = tmp_path_factory.mktemp('data')
-    # shutil.copytree(data, data_dir, dirs_exist_ok=True)  # pyright: ignore
-    return data
+    data_dir = tmp_path_factory.mktemp('data')
+    shutil.copytree(data, data_dir, dirs_exist_ok=True)  # pyright: ignore
+    return data_dir
 
 
 @pytest.fixture
