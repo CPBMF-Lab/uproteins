@@ -33,6 +33,7 @@ test = [
 [tool.poetry]
 package-mode = false
 
+
 [tool.pytest.ini_options]
 testpaths = [ "tests" ]
 markers = [
@@ -44,6 +45,7 @@ markers = [
     "fullrun: mark as a full run test",
     "parser: mark as a parser test",
 ]
+
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
