@@ -30,7 +30,7 @@ class MinimalRuns(object):
         self.file = file
         self.n = sample_number
 
-    def get_df (self):
+    def get_df(self):
         df = pd.read_csv(self.file, sep='\t')
         return df
 
@@ -74,8 +74,6 @@ class MinimalRuns(object):
         for i in range(len(entries)):
             if entries[i] not in check_entries:
                 check_entries.append(entries[i])
-                listtt = run_dic[entries[i]].split(",")
-                # print(listtt)
                 length = len(run_dic[entries[i]].split(","))
                 # print(length)
                 if length >= 2:
@@ -163,5 +161,6 @@ class OrganizePlot(object):
         plt.show()
 
 
-# genome = OrganizePlot("/home/eduardo/Documents/Progenitus/RunTrial/pczao/Genome/Results/genome_unique_results_summarized.xls")
+# genome = OrganizePlot("/home/eduardo/Documents/Progenitus/RunTrial/pczao/
+# Genome/Results/genome_unique_results_summarized.xls")
 # genome.plot_data()

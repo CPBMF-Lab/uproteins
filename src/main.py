@@ -29,6 +29,7 @@ from src.percolator import Decoy
 from src.assembly import TranscriptAssembly, CompareTranscripts, ReadMapper
 from src.master import Archives
 from src.database import Database
+from src.search_engine import MSGFPlus, CometMS
 from src.postprocess import ResultsSummarizer
 from src.testing import PipelineTesting
 from src.pipelines import PostMSPipeline, ValidatePipeline
@@ -112,19 +113,40 @@ def run_workflow(
             print("Transcriptome database generated.")
 
     elif mode == "ms":
-        genome = ps.PeptideSearch("Genome", args.mass_spec, "genome_database.fasta", args)
-        genome.peptide_identification()
         genome_decoy = Decoy(db="genome_database.fasta", db_type="Genome")
-        genome_decoy.reverse_sequences().to_fasta()
-        genome_decoy_search = ps.PeptideSearch("Genome", args.mass_spec, "Genome/Percolator/Genome_decoy.fasta", args, decoy=True)
-        genome_decoy_search.peptide_identification()
+        genome_decoy.reverse_sequences()
+        genome_decoy.to_fasta()
+
+        # It shouldn't be possible to pass other arg to search engine
+        search_engine = MSGFPlus(args)
+        if args.search_engine == 'CometMS':
+            search_engine = CometMS(args)
+
+        genome = ps.PeptideSearch(
+            "Genome",
+            args.mass_spec,
+            "genome_database.fasta",
+            "Genome/Percolator/Genome_decoy.fasta",
+            search_engine,
+            args
+        )
+        genome.peptide_identification()
         if args.transcriptome:
-            transcriptome = ps.PeptideSearch("Transcriptome", args.mass_spec, "transcriptome_database.fasta", args)
+            transcriptome_decoy = Decoy(
+                db="transcriptome_database.fasta",
+                db_type="Transcriptome"
+            )
+            transcriptome_decoy.reverse_sequences()
+            transcriptome_decoy.to_fasta()
+            transcriptome = ps.PeptideSearch(
+                "Transcriptome",
+                args.mass_spec,
+                "transcriptome_database.fasta",
+                "Transcriptome/Percolator/Transcriptome_decoy.fasta",
+                search_engine,
+                args
+            )
             transcriptome.peptide_identification()
-            transcriptome_decoy = Decoy(db="transcriptome_database.fasta", db_type="Transcriptome")
-            transcriptome_decoy.reverse_sequences().to_fasta()
-            transcriptome_decoy_search = ps.PeptideSearch("Transcriptome", args.mass_spec, "Transcriptome/Percolator/Transcriptome_decoy.fasta", args, decoy=True)
-            transcriptome_decoy_search.peptide_identification()
 
     elif mode == "postms":
         """ newest method """

@@ -24,6 +24,7 @@ import os
 import typing as t
 
 from src.cli import _types
+from src.search_engine import MSGFPlus, CometMS
 
 
 # TODO: Better help messages for each arg, likely removing the formatter_class
@@ -202,8 +203,6 @@ _database_parser.add_argument(
 # =======
 # MS MODE
 # =======
-# TODO: I have to check each of these args to add validation
-# The problem is they are from another CLI application
 _ms_parser = _modes.add_parser('ms')
 _ms_parser.add_argument(
     '-o', '--outdir',
@@ -226,13 +225,42 @@ _ms_parser.add_argument(
     type=os.path.abspath
 )
 _ms_parser.add_argument(
+    "--threads",
+    help="Number of concurrent threads to be executed by the search engine."
+)
+_ms_parser.add_argument(
+    '--search_engine', '-E',
+    help='Select the search engine for the PMS search.',
+    choices=('MS-GF+', 'CometMS'),
+    default='MS-GF+'
+)
+
+# MS groups
+msgf = _ms_parser.add_argument_group(
+    'MS-GF+',
+    'Configuration parameters for MS-GF+ search engine. Ignored if Comet '
+    'MS/MS is used.'
+)
+comet = _ms_parser.add_argument_group(
+    'Comet MS/MS',
+    'Configuration parameters for Comet MS/MS search engine. Ignored if '
+    'MS-GF+ is used.'
+)
+
+# MS-GF+ configuration args
+msgf.add_argument(
+    "--xmx",
+    help="Maximum heap size for the JVM to run MS-GF+ with.",
+    default='48G'
+)
+msgf.add_argument(
     "--t",
     help="The precursor mass tolerance. (e.g. 2.5Da, 20ppm or "
     "0.5Da,2.5Da; Default: 20ppm) Use a comma to define asymmetric "
     "values. E.g. --t 0.5Da,2.5Da will set 0.5Da to the left (ObsMass < "
     "TheoMass) and 2.5Da to the right (ObsMass > TheoMass)"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--ti",
     help="The isotope error range. (Range of allowed isotope peak errors; "
     "Default: 0,1). Takes into account the error introduced by choosing a "
@@ -241,17 +269,7 @@ _ms_parser.add_argument(
     "-1,2 tests abs(ObservedPepMass - TheoreticalPepMass - n * 1.00335Da) "
     "< 20ppm for n = -1, 0, 1, 2."
 )
-_ms_parser.add_argument(
-    "--thread",
-    help="Number of concurrent threads to be executed; Default: Number of "
-    "available cores. This is best set to the number of physical cores in "
-    "a single NUMA node. Generally a single NUMA node is 1 physical "
-    "processor. The default will try to use hyperthreading cores, which "
-    "can increase the amount of time this process will take. This is "
-    "because the part of Scoring param generation that is multithreaded "
-    "is also I/O intensive."
-)
-_ms_parser.add_argument(
+msgf.add_argument(
     "--tasks",
     help="(Override the number of tasks to use on the threads; Default: "
     "(internally calculated based on inputs)) More tasks than threads "
@@ -266,74 +284,127 @@ _ms_parser.add_argument(
     "comparably less memory, but may cause the search to take 1.5 to 2 "
     "times as long."
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--m",
     help="[-m FragmentationMethodID] (Fragmentation Method, Default: 0) 0 "
     "means as written in the spectrum or CID if no info (Default) 1 means "
     "CID, 2 means ETD, 3 means HCD"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--inst",
     help="The instrument used for the experiment. (0: Low-res LCQ/LTQ "
     "(Default), 1: Orbitrap/FTICR/Lumos, 2: TOF, 3: Q-Exactive)"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--e",
     help="The enzyme used for protein digestion. (0: unspecific cleavage, "
     "1: Trypsin (Default), 2: Chymotrypsin, 3: Lys-C, 4: Lys-N, 5: "
     "glutamyl endopeptidase, 6: Arg-C, 7: Asp-N, 8: alphaLP, 9: no "
     "cleavage)"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--protocol",
     help="0: Automatic (Default), 1: Phosphorylation, 2: iTRAQ, 3: "
     "iTRAQPhospho, 4: TMT, 5: Standard"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--ntt",
     help="Number of Tolerable Termini, Default: 2) E.g. For trypsin, 0: "
     "non-tryptic, 1: semi-tryptic, 2: fully-tryptic peptides only."
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--mod",
     help="Modification file; Default: standard amino acids with fixed "
     "C+57; only if -mod is not specified)"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--minLength",
     help="Minimum peptide length to consider; Default: 6"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--maxLength",
     help="Maximum peptide length to consider; Default: 40"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--minCharge",
     help="Minimum precursor charge to consider if charges are not "
     "specified in the spectrum file; Default: 2"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--maxCharge",
     help="Maximum precursor charge to consider if charges are not "
     "specified in the spectrum file; Default: 3"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--n",
     help="Number of matches per spectrum to be reported; Default: 1"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--ccm",
     help="Mass of charge carrier; Default: mass of proton (1.00727649)"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--maxMissedCleavages",
     help="Exclude peptides with more than this number of missed cleavages "
     "from the search; Default: -1 (no limit)"
 )
-_ms_parser.add_argument(
+msgf.add_argument(
     "--numMods",
     help="Maximum number of dynamic (variable) modifications per peptide; "
     "Default: 3"
+)
+
+# Comet MS/MS configuration args
+comet.add_argument(
+    '--peptide_mass_tolerance_lower',
+    help='This parameter controls the lower bound of the precursor mass '
+    'tolerance value. The units of the mass tolerance is controlled by the '
+    'parameter “peptide_mass_units”; Default: -3.0'
+)
+comet.add_argument(
+    '--peptide_mass_units',
+    help='This parameter controls the units applied to the peptide mass '
+    'tolerance parameters. Set this parameter to 0 for amu. “amu” stands for '
+    '“atomic mass unit” aka dalton. Set this parameter to 1 for mmu. “mmu” '
+    'stands for “milli mass unit” and effectively divides the specified mass '
+    'tolerance values by 1000. Set this parameter to 2 for ppm. “ppm” stands '
+    'for “parts per million”. The applied tolerance would be (mass_tolerance '
+    '* precursor_mass / 1000000); Default: 0'
+)
+comet.add_argument(
+    '--mass_type_fragment',
+    help='Controls the mass type, average or monoisotopic, applied to '
+    'fragment ion calculations. Valid values are 0 or 1: 0 for average '
+    'masses, 1 for monoisotopic masses; Default: 1'
+)
+comet.add_argument(
+    '--precursor_mass_tolerance',
+    help='This parameter controls how the peptide mass tolerance parameters '
+    'are applied. The tolerances can be applied to the singly charged peptide '
+    'mass or it can be applied to the precursor m/z. Note that this parameter '
+    'is applied only when amu or mmu tolerances are specified. It is ignored '
+    'when ppm tolerances are specified. Valid values are 0 or 1. Set this '
+    'parameter to 0 to specify that the mass tolerance is applied to the '
+    'singly charged peptide mass. Set this parameter to 1 to specify that the '
+    'mass tolerance is applied to the precursor m/z; Default: 0'
+)
+comet.add_argument(
+    '--isotope_error',
+    help='This parameter controls whether the peptide mass tolerance '
+    'parameters takes into account possible isotope errors in the precursor '
+    'mass measurement. It is possible that an accurately read precursor mass '
+    'is not measured on the monoisotopic peak of a precursor isotopic '
+    'pattern. In these cases, the precursor mass is measured on the first '
+    'isotope peak (one C13 atom) or possibly even the second or third isotope '
+    'peak. To address this problem, this “isotope_error” parameter allows you '
+    'to perform an accurate mass search (say 10 ppm) even if the precursor '
+    'mass measurement is off by one or more C13 offsets. Valid values are 0 '
+    'through 7: 0 analyzes no isotope offsets, just the given precursor mass; '
+    '1 searches 0, +1 isotope offsets; 2 searches 0, +1, +2 isotope offsets; '
+    '3 searches 0, +1, +2, +3 isotope offsets; 4 searches -1, 0, +1, +2, +3 '
+    'isotope offsets; 5 searches -1, 0, +1 isotope offsets; 6 searches -3, '
+    '-2, -1, 0, +1, +2, +3 isotope offsets; 7 searches -8, -4, 0, +4, +8 '
+    'isotope offsets (for +4/+8 stable isotope labeling); Default: 0'
 )
 
 # ===========

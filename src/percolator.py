@@ -19,6 +19,8 @@
 
 import os
 import sys
+import pathlib
+
 from Bio import SeqIO
 
 
@@ -32,9 +34,8 @@ class Decoy(object):
         self.path = sys.path[0]
 
     def __create_dir(self):
-        if not os.path.exists(f"{self.type}/Percolator"):
-            cmd_dir = f'mkdir {self.type}/Percolator'
-            os.system(cmd_dir)
+        dir = pathlib.Path(f'{self.type}/Percolator')
+        dir.mkdir(exist_ok=True, parents=True)
 
     def __get_seqs(self):
         seqs = []

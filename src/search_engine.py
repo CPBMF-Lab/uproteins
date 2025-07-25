@@ -1,0 +1,288 @@
+# Copyright © 2025 Eduardo Vieira de Souza
+# Copyright © 2025 Adriana Canedo
+# Copyright © 2025 Cristiano Valim Bizarro
+# Copyright © 2025 Bruno Maestri A Becker
+#
+# This file is part of uProteInS.
+#
+# uProteInS is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# uProteInS is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# uProteInS. If not, see <https://www.gnu.org/licenses/>.
+
+
+import argparse
+import subprocess
+import sys
+import shutil
+import pathlib as p
+import typing as t
+
+import pandas as pd
+
+from src import utils
+
+
+class SearchEngine(t.Protocol):
+    def __init__(self, args: argparse.Namespace):
+        """Initialize the search engine with configurations.
+
+        Arguments
+        ---------
+        folder : str
+            Either the Genome or Transcriptome folder.
+        args : Namespace
+            An :obj:`argparse.Namespace` object used to get the SearchEngine's
+            run configs from the cli arguments.
+        """
+        ...
+
+    def get_databases(
+        self,
+        folder: str,
+        database: p.Path,
+        decoy: p.Path
+    ) -> t.Generator[p.Path, None, None]:
+        """Generate databases for a specific search engine.
+
+        Returns
+        -------
+        Generator[p.Path, None, None]
+            A generator that yields paths to the databases to be searched.
+        """
+        ...
+
+    def run(
+        self,
+        folder: str,
+        mzml_path: p.Path,
+        database: p.Path
+    ) -> subprocess.CompletedProcess[str]:
+        """Execute the search and return results.
+
+        Arguments
+        ---------
+        mzml_folder : Path
+            The path to a folder containing the mzML files to execute the
+            search.
+        database : Path
+            A path to the database fasta file to search against.
+
+        Returns
+        -------
+        CompletedProcess
+            :obj:`CompletedProcess` instance returned by the subprocess call.
+        """
+        ...
+
+    def save_to_pin(
+        self,
+        folder: str,
+        database: p.Path,
+        decoy: p.Path
+    ) -> None:
+        """Convert search results to pin format.
+
+        Arguments
+        ---------
+        result_files : list[Path]
+            A list of search result files that should be converted to a single
+            percolator pin file.
+        database : Path
+            The database file used for the search.
+        decoy : Path
+            The decoy database file used for the search.
+        """
+        ...
+
+
+class CometMS:
+    _ARGS = [
+        'peptide_mass_tolerance_lower', 'peptide_mass_units',
+        'mass_type_fragment', 'precursor_mass_tolerance',
+        'isotope_error',
+    ]
+
+    def __init__(self, args: argparse.Namespace):
+        self.args = args
+        self.params = self._get_params()
+
+    def get_databases(
+        self,
+        folder: str,
+        database: p.Path,
+        decoy: p.Path
+    ) -> t.Generator[p.Path, None, None]:
+        comet_db = p.Path(f'{folder}_comet_database.fasta')
+        utils.concat_fastas(comet_db, database, decoy)
+        yield comet_db
+
+    def run(
+        self,
+        folder: str,
+        mzml_path: p.Path,
+        database: p.Path
+    ) -> subprocess.CompletedProcess[str]:
+        self.params['database_name'] = str(database.absolute())
+        self.params['output_suffix'] = f'_{folder}'
+        comet_path = (
+            f'{sys.path[0]}/dependencies/'
+            f'CometMS/{folder}/comet.linux.exe'
+        )
+        self._build_params_file(folder)
+        input_files = f'{mzml_path}/*.mzML'
+        cmd = [comet_path, input_files]
+        result = subprocess.run(cmd, text=True, capture_output=True)
+        for file in mzml_path.iterdir():
+            if file.name.endswith(f'_{folder}.pin'):
+                shutil.move(file, folder)
+        return result
+
+    def save_to_pin(
+        self,
+        folder: str,
+        database: p.Path,
+        decoy: p.Path
+    ) -> None:
+        # We need database and decoy for compliance with the SearchEngine
+        # Protocol
+        pin_list = [
+            pd.read_csv(file, sep='\t', header=1)
+            for file in p.Path(f'{folder}/Percolator').iterdir()
+            if file.name.endswith(f'_{folder}.pin')
+        ]
+        pd.concat(pin_list).to_csv(
+            f'{folder}/Percolator/{folder}_pin.txt',
+            sep='\t'
+        )
+
+    def _get_params(self) -> dict[str, str]:
+        param_dict = {
+            key: value
+            for key, value
+            in vars(self.args).items()
+            if key in CometMS._ARGS
+        }
+        param_dict['output_pepxmlfile'] = '0'
+        param_dict['output_percolatorfile'] = '1'
+        if self.args.threads is not None:
+            param_dict['num_threads'] = str(self.args.threads)
+        return param_dict
+
+    def _build_params_file(self, folder):
+        with open(
+            f'{sys.path[0]}/dependencies/'
+            f'CometMS/{folder}/comet.params',
+            'w'
+        ) as params:
+            for key, value in self.params.items():
+                params.write(f'{key} = {value}\n')
+
+
+class MSGFPlus:
+    _ARGS = [
+        "t", "ti", "tasks", "m", "inst", "e", "protocol", "ntt", "mod",
+        "minLength", "maxLength", "minCharge", "maxCharge", "n", "ccm",
+        "maxMissedCleavages", "numMods"
+    ]
+
+    def __init__(self, args: argparse.Namespace):
+        self.args = args
+        self.base_command = self._build_command()
+
+    def get_databases(
+        self,
+        folder: str,
+        database: p.Path,
+        decoy: p.Path
+    ) -> t.Generator[p.Path, None, None]:
+        yield database
+        yield decoy
+
+    def run(
+        self,
+        folder: str,
+        mzml_path: p.Path,
+        database: p.Path
+    ) -> subprocess.CompletedProcess:
+        cmd = [
+            *self.base_command,
+            '-d', str(database),
+            '-s', str(mzml_path),
+        ]
+        print(f"Running MS-GF+: '{' '.join(cmd)}'.")
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        for path in p.Path('.').iterdir():
+            if path.suffix == '.mzid':
+                shutil.move(
+                    path,
+                    f'{folder}/{path.with_suffix("").name}'
+                    f'_{database.with_suffix(".mzid").name}'
+                )
+        return result
+
+    def save_to_pin(
+        self,
+        folder: str,
+        database: p.Path,
+        decoy: p.Path
+    ) -> None:
+        target_meta, decoy_meta = self._generate_metafiles(folder)
+        msgf2pin_path = p.Path('msgf2pin')
+        cmd_pin = [
+            str(msgf2pin_path),
+            str(target_meta), str(decoy_meta),
+            '-o', f'{folder}/Percolator/{folder}_pin.txt',
+            '-F', str(database) + ',' + str(decoy),
+            '-c', '2'
+        ]
+        print(f"Running msgf2pin: '{' '.join(cmd_pin)}'.")
+        subprocess.run(cmd_pin, check=True)
+
+    def _generate_metafiles(self, folder: str) -> tuple[p.Path, p.Path]:
+        folder_path = p.Path(folder)
+
+        decoy_meta = folder_path / f'{folder}_decoy_metafile.txt'
+        target_meta = folder_path / f'{folder}_target_metafile.txt'
+
+        decoys = [
+            str(file.absolute())
+            for file in folder_path.iterdir()
+            if file.suffix == '.mzid'
+            if 'decoy' in file.name
+        ]
+        targets = [
+            str(file.absolute())
+            for file in folder_path.iterdir()
+            if file.suffix == '.mzid'
+            if 'decoy' not in file.name
+        ]
+
+        with decoy_meta.open('w') as decoy:
+            decoy.writelines('\n'.join(decoys))
+        with target_meta.open('w') as target:
+            target.writelines('\n'.join(targets))
+
+        return target_meta, decoy_meta
+
+    def _build_command(self) -> list[str]:
+        cmd = [
+            'java',
+            f'-Xmx{self.args.xmx}',
+            '-jar', f'{sys.path[0]}/dependencies/MSGF/MSGFPlus.jar',
+            '-tda', '0',
+            '-addFeatures', '1'
+        ]
+        for key, value in vars(self.args).items():
+            if key in MSGFPlus._ARGS and value is not None:
+                cmd.extend([f'-{key}', value])
+        if self.args.threads is not None:
+            cmd.extend(['-thread', str(self.args.threads)])
+        return cmd
