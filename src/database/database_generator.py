@@ -1,6 +1,7 @@
 # Copyright © 2021-2025 Eduardo Vieira de Souza
 # Copyright © 2021-2025 Adriana Canedo
 # Copyright © 2021-2025 Cristiano Valim Bizarro
+# Copyright © 2025 Bruno Maestri A Becker
 #
 # This file is part of uProteInS.
 #
@@ -140,19 +141,19 @@ class Database(object):
         self.blast_dir = f'{path}/dependencies/blast_for_uproteins/bin'
 
     def mark_annotated(self):
-        # if not os.path.exists('annotated.fasta'):
-        marked = []
-        records = SeqIO.parse(self.proteome, 'fasta')
-        for record in records:
-            marked.append(f'>{str(record.description)}_ANNO\n{str(record.seq)}\n')
-        with open('annotated.fasta', 'w') as out:
-            out.writelines(marked)
+        with open('annotated.fasta', 'w') as handle:
+            for record in SeqIO.parse(self.proteome, 'fasta'):
+                record.id += '_ANNO'
+                # Stopping the sequences from being written
+                # >name name extra-info
+                old_desc = record.description
+                record.description = ' '.join(old_desc.split(' ')[1:])
+                SeqIO.write(record, handle, 'fasta')
         self.annotated = 'annotated.fasta'
 
     def unify(self):
         cmd_cat = f'cat {self.orf_to_blast} {self.annotated} > {self.filetype}_database.fasta'
         os.system(cmd_cat)
-
 
     def blast_to_Proteome(self):
         """ Aligns the ORFs to the annotated proteome with Blastp in order to identify annotated entries. """
