@@ -114,8 +114,6 @@ class GenomeCoordinatesRNA(object):
     def __init__(self, psm_table, string_dict, ref_dict=None):
         """ orf_dict is returned by get_dict() method from StringTieGFF class."""
         self.psm = pd.read_csv(psm_table, sep='\t')
-        self.psm = self.psm[self.psm["proteinIds"].str.contains('ORF')]
-        self.psm = self.psm[self.psm["proteinIds"].str.contains('|', regex=False) == False]
         self.ids = self.psm["proteinIds"].tolist()
         self.stringTieDict = string_dict
         self.refSeqDict = ref_dict
@@ -216,7 +214,6 @@ class GenomeCoordinates(object):
     def __init__(self, psm_table, ref_dict=None):
         """ ref_dict is returned by get_dict() method from RefSeqGFF class. """
         self.psm = pd.read_csv(psm_table, sep='\t')
-        self.psm = self.psm[self.psm["proteinIds"].str.contains('|', regex=False) == False]
         self.ids = self.psm["proteinIds"].tolist()
         self.refSeqDict = ref_dict
         self.coordinates = []
