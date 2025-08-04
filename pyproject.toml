@@ -1,6 +1,6 @@
 [project]
 name = "uproteins"
-version = "1.4.0"
+version = "1.4.1"
 description = ""
 authors = [
     {name = "Cristiano Valim Bizarro", email = "cristiano.bizarro@pucrs.br"},
