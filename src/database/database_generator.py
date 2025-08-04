@@ -147,7 +147,9 @@ class Database(object):
                 # Stopping the sequences from being written
                 # >name name extra-info
                 old_desc = record.description
-                record.description = ' '.join(old_desc.split(' ')[1:])
+                if old_desc.split()[0] == record.id:
+                    # Old desc starts with id
+                    record.description = ' '.join(old_desc.split()[1:])
                 SeqIO.write(record, handle, 'fasta')
         self.annotated = 'annotated.fasta'
 
