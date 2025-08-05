@@ -224,7 +224,7 @@ class CommaListAction(argparse.Action):
         dest,
         nargs=None,
         const=None,
-        default=False,
+        default=None,
         type=None,
         required=False,
         help=None,
