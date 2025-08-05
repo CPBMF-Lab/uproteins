@@ -165,7 +165,6 @@ def Memory(val: str) -> str:
 
 
 class YesOrNoBooleanAction(argparse.Action):
-    @t.override
     def __init__(
         self,
         option_strings,
@@ -191,7 +190,6 @@ class YesOrNoBooleanAction(argparse.Action):
             metavar=metavar,
         )
 
-    @t.override
     def __call__(self, parser, namespace, values, option_string=None):
         if 'YES'.startswith(values.upper()):   # pyright: ignore
             setattr(namespace, self.dest, True)
@@ -220,7 +218,6 @@ class CommaListAction(argparse.Action):
     >>> args = parser.parse('1,2,dd')
     ArgumentTypeError: invalid int value: 'dd'
     """
-    @t.override
     def __init__(
         self,
         option_strings,
@@ -248,11 +245,9 @@ class CommaListAction(argparse.Action):
             metavar=metavar,
         )
 
-    @t.override
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
 
-    @t.override
     def format_usage(self):
         return f'{self.metavar},[{self.metavar}...]'
 
