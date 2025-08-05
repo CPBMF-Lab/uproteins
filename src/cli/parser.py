@@ -75,18 +75,21 @@ _assembly_parser.add_argument(
 # Reserving '-s' for a future '--silently'
 _assembly_parser.add_argument(
     '--single', '-S',
-    type=_types.CommaList(_types.FilePath),
+    action=_types.CommaListAction,
+    type=_types.FilePath,
     help="Single-end reads. Comma separated list."
 )
 _assembly_parser.add_argument(
     '--reads1', '-1',
-    type=_types.CommaList(_types.FilePath),
+    action=_types.CommaListAction,
+    type=_types.FilePath,
     help="Paired-end reads. Inform your reads2 as well. Comma separated "
     "list."
 )
 _assembly_parser.add_argument(
     '--reads2', '-2',
-    type=_types.CommaList(_types.FilePath),
+    action=_types.CommaListAction,
+    type=_types.FilePath,
     help="Paired-end reads. Inform your reads1 as well. Comma separated "
     "list."
 )
@@ -156,14 +159,16 @@ _database_parser.add_argument(
     help="The start codons that should be used for the six and three "
     "frame translation. By default, the NCBI bacterial genetic code is "
     "used. Space separated list.",
-    type=_types.CommaList(_types.Codon),
+    action=_types.CommaListAction,
+    type=_types.Codon,
     default='TTG,CTG,ATT,ATC,ATA,ATG,GTG'
 )
 _database_parser.add_argument(
     "--stops",
     help="The stop codons that should be used for the six and three frame "
     "translation. Space separated list.",
-    type=_types.CommaList(_types.Codon),
+    action=_types.CommaListAction,
+    type=_types.Codon,
     default='TAA,TAG,TGA'
 )
 _database_parser.add_argument(
@@ -223,7 +228,7 @@ _ms_parser.add_argument(
     dest='mass_spec',
     help="Inform the directory containing all your .mzML files.",
     required=True,
-    type=os.path.abspath
+    type=_types.DirectoryPath
 )
 _ms_parser.add_argument(
     "--t",
@@ -399,14 +404,16 @@ _postms_parser.add_argument(
     help="The start codons that should be used for the six and three "
     "frame translation. By default, the NCBI bacterial genetic code is "
     "used. Space separated list.",
-    type=_types.CommaList(_types.Codon),
+    action=_types.CommaListAction,
+    type=_types.Codon,
     default='TTG,CTG,ATT,ATC,ATA,ATG,GTG'
     )
 _postms_parser.add_argument(
     "--stops",
     help="The stop codons that should be used for the six and three frame "
     "translation. Space separated list.",
-    type=_types.CommaList(_types.Codon),
+    action=_types.CommaListAction,
+    type=_types.Codon,
     default='TAA,TAG,TGA'
 )
 _postms_parser.add_argument(
