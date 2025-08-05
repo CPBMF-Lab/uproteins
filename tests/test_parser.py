@@ -18,6 +18,9 @@
 # uProteInS. If not, see <https://www.gnu.org/licenses/>.
 
 
+# TODO: This whole file could be improved
+
+
 import argparse
 import itertools
 import pathlib
@@ -176,14 +179,22 @@ class TestTypes:
         with pytest.raises(TypeError):
             _types.Codon(codon)
 
-    def test_CommaList(self, tmp_path, inexistent_path):
-        DirList = _types.CommaList(_types.DirectoryPath)
-        path_list = DirList(str(tmp_path) + ',' + str(tmp_path))
-        assert path_list is not None
-        for path in path_list:
-            assert path == tmp_path.absolute()
-        with pytest.raises(argparse.ArgumentTypeError):
-            DirList(str(tmp_path) + ',' + str(inexistent_path))
+    # TODO: Parametrize
+    def test_CommaListAction(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            'nums',
+            action=_types.CommaListAction,
+            type=int,
+        )
+        args = parser.parse_args(['0,1,2,3'])
+        assert args.nums
+        for i, n in enumerate(args.nums):
+            assert isinstance(n, int)
+            assert n == i
+        with pytest.raises(SystemExit) as excinfo:
+            parser.parse_args(['0,1,2,three'])
+        assert excinfo.value.code == 2
 
     @pytest.mark.parametrize('yes', yes)
     def test_yes_YesOrNoBooleanAction(self, yes):

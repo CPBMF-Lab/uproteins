@@ -39,7 +39,7 @@ T = t.TypeVar('T')
 
 
 class Executable:
-    def __init__(self, default: t.Optional[str]) -> None:
+    def __init__(self, default: str) -> None:
         """Executable type. This type is a callable class. Initialize it at the
         type field with the default value. The type checking won't fail even
         if it's not an Executable.
@@ -65,13 +65,10 @@ class Executable:
         """
         self.default = default
 
-    def __call__(self, val: t.Optional[str]) -> t.Optional[pathlib.Path]:
+    def __call__(self, val: str) -> pathlib.Path:
         """Receive a str path and raise an :exc:`ArgumentError` if the value
         is not a valid executable, else return a :obj:`Path` object.
         """
-        if val is None:
-            return val
-
         if val == self.default:
             return pathlib.Path(val)
 
@@ -86,104 +83,60 @@ class Executable:
         return pathlib.Path(which).absolute()
 
 
-class CommaList(t.Generic[T]):
-    """Comma list type. This type is a callable class. Initialize it at the
-    type field with the type of the list. This will generate a Python list
-    and apply the type used in initialization to each value.
-
-    When called
-    -----------
-    Receive a str containing a comma-separated list of values. For each value,
-    apply the type conversion with proper error handling. Return a Python list.
-
-    >>> intList = CommaList(int)
-    >>> intList('1,2,3')
-    [1, 2, 3]
-    >>> intList('1,2,three')
-    ArgumentTypeError: invalid int value: 'three'
-    """
-    def __init__(self, type: t.Callable[[str], t.Optional[T]]):
-        self.type = type
-
-    def __call__(self, val: t.Optional[str]) -> t.Optional[list[T]]:
-        if val is None:
-            return None
-
-        return_list = []
-        for to_be_converted in val.split(','):
-            try:
-                converted = self.type(to_be_converted)
-                if converted is None:
-                    continue
-                return_list.append(converted)
-            # This is necessary for the correct error display by argparse
-            except TypeError:
-                raise argparse.ArgumentTypeError(
-                    f"invalid {self.type.__name__} value: '{to_be_converted}'"
-                )
-
-        return return_list
-
-
-def FilePath(val: t.Optional[str]) -> t.Optional[pathlib.Path]:
+def FilePath(val: str) -> pathlib.Path:
     """Receive a str path and raise an :exc:`ArgumentError` if the value is not
     the path to a file, else return a :obj:`Path` object.
     """
-    if val is None:
-        return val
-
     path = pathlib.Path(val)
     if not (path.exists() and path.is_file()):
         raise TypeError
+    # Test if it's readable
+    with open(path, 'r'):
+        pass
     return path.absolute()
 
 
-def FileName(val: t.Optional[str]) -> t.Optional[pathlib.Path]:
+def FileName(val: str) -> pathlib.Path:
     """Receive a str path and raise an :exc:`ArgumentError` if the value is not
     a filename, else return a :obj:`Path` object.
 
     A filename is considered to be a path to a file or a path that doesn't yet
     exist.
     """
-    if val is None:
-        return val
-
     path = pathlib.Path(val)
     if path.exists() and not path.is_file():
         raise TypeError
+    if path.exists():
+        # Test if it's writable
+        with open(path, 'a'):
+            pass
     return path.absolute()
 
 
-def DirectoryPath(val: t.Optional[str]) -> t.Optional[pathlib.Path]:
+def DirectoryPath(val: str) -> pathlib.Path:
     """Receive a str path and raise an :exc:`ArgumentError` if the value is not
     a valid directory, else return a :obj:`Path` object.
     """
-    if val is None:
-        return val
-
     path = pathlib.Path(val)
     if not (path.exists() and path.is_dir()):
         raise TypeError
     return path.absolute()
 
 
-def DirectoryName(val: t.Optional[str]) -> t.Optional[pathlib.Path]:
+def DirectoryName(val: str) -> pathlib.Path:
     """Receive a str path and raise an :exc:`ArgumentError` if the value is not
     a valid directoryname, else return a :obj:`Path` object.
 
     A valid directoryname is considered to be a path to a directory or a path
     that doesn't yet exist.
     """
-    if val is None:
-        return val
-
     path = pathlib.Path(val)
     if path.exists() and not path.is_dir():
         raise TypeError
     return path.absolute()
 
 
-def Codon(val: t.Optional[str]) -> t.Optional[str]:
+def Codon(val: str) -> str:
     """Receive a str val and raise an :exc:`ArgumentError` if the value is not
     a valid codon, else return the str untouched.
 
@@ -198,20 +151,14 @@ def Codon(val: t.Optional[str]) -> t.Optional[str]:
     return val
 
 
-def PositiveInt(val: t.Optional[str]) -> t.Optional[int]:
-    if val is None:
-        return val
-
+def PositiveInt(val: str) -> int:
     n = int(val)
     if n < 1:
         raise TypeError
     return n
 
 
-def Memory(val: t.Optional[str]) -> t.Optional[str]:
-    if val is None:
-        return val
-
+def Memory(val: str) -> str:
     if re.fullmatch(r'[0-9]*[1-9]+[0-9]*[kKgGmM]', val) is None:
         raise TypeError
     return val
@@ -222,27 +169,103 @@ class YesOrNoBooleanAction(argparse.Action):
         self,
         option_strings,
         dest,
-        default='NO',
+        default=False,
         required=False,
         help=None,
-        metavar='{y/N}',
+        metavar=None,
     ):
+        if not isinstance(default, bool):
+            raise TypeError(f'default parameter must be a bool, not {default}')
+
+        if metavar is None:
+            # Set metavar to capitalized default option
+            metavar = '{Y/n}' if default else '{y/N}'
+
         super().__init__(
             option_strings,
             dest,
             default=default,
             required=required,
             help=help,
-            metavar=metavar
+            metavar=metavar,
         )
 
     def __call__(self, parser, namespace, values, option_string=None):
-        if 'YES'.startswith(values.upper()):
+        if 'YES'.startswith(values.upper()):   # pyright: ignore
             setattr(namespace, self.dest, True)
-        elif 'NO'.startswith(values.upper()):
+        elif 'NO'.startswith(values.upper()):  # pyright: ignore
             setattr(namespace, self.dest, False)
         else:
             parser.error(
                 f"argument {self.option_strings[0]}: invalid choice: "
                 f"'{values}' (choose from 'YES','NO')"
             )
+
+
+class CommaListAction(argparse.Action):
+    """Comma list action. This will generate a Python list and apply
+    the type used in initialization to each value.
+
+    When used
+    ---------
+    Receive a str containing a comma-separated list of values. For each value,
+    apply the type conversion with proper error handling. Return a Python list.
+
+    >>> parser.add_argument('nums', type=int, action=CommaListAction)
+    >>> args = parser.parse('1,2,3')
+    >>> args.nums
+    [1, 2, 3]
+    >>> args = parser.parse('1,2,dd')
+    ArgumentTypeError: invalid int value: 'dd'
+    """
+    def __init__(
+        self,
+        option_strings,
+        dest,
+        nargs=None,
+        const=None,
+        default=None,
+        type=None,
+        required=False,
+        help=None,
+        metavar=None,
+    ):
+        if type is None:
+            type = lambda x: x
+
+        super().__init__(
+            option_strings,
+            dest,
+            nargs,
+            const,
+            default=default,
+            type=self._Applicative(type),
+            required=required,
+            help=help,
+            metavar=metavar,
+        )
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+
+    def format_usage(self):
+        return f'{self.metavar},[{self.metavar}...]'
+
+    class _Applicative(t.Generic[T]):
+        def __init__(self, type: t.Callable[[str], T]):
+            self.type = type
+
+        def __call__(self, val: str) -> list[T]:
+            return_list: list[T] = []
+            for to_be_converted in val.split(','):
+                try:
+                    converted = self.type(to_be_converted)
+                    return_list.append(converted)
+                # This is necessary for the correct error display by argparse
+                except (ValueError, TypeError):
+                    raise argparse.ArgumentTypeError(
+                        "invalid %s value: '%s'"
+                        % (self.type.__name__, to_be_converted)
+                    )
+
+            return return_list
