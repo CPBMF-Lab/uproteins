@@ -161,6 +161,7 @@ class Coordinator(object):
     def add_information(self, output):
         # proteins = self.proteined["Protein"].tolist()
         ndf = pd.DataFrame(columns=self.proteined.columns)
+        to_concat: list[pd.DataFrame] = [ndf]
 
         for protein in self.coordinates:
             df = self.proteined[self.proteined["Protein"].str.contains(protein)]
@@ -172,7 +173,9 @@ class Coordinator(object):
                 coordinates.append(self.coordinates[protein])
             df.insert(8, "entry", new_proteins)
             df.insert(5, "Genome Coordinates", coordinates)
-            ndf = ndf.append(df)
+            # ndf = ndf.append(df)
+            to_concat.append(df)
+        ndf = pd.concat(to_concat)
         ndf = ndf.drop_duplicates()
         ndf = ndf.drop(columns='Protein')
         ndf = ndf.rename(columns={'entry': 'Protein'})
@@ -210,10 +213,13 @@ class ProteinFDR(object):
         names = protein_df["ProteinId"].tolist()
         results = pd.read_csv(f'{self.percDir}/{self.filetype}_proteined.tsv', sep='\t')
         filtered_results = pd.DataFrame(columns=results.columns)
+        to_concat = [filtered_results]
         for i in names:
             # print(i)
             df = results[results["Protein"].str.contains(i) == True]
-            filtered_results = filtered_results.append(df)
+            to_concat.append(df)
+            # filtered_results = filtered_results.append(df)
+        filtered_results = pd.concat(to_concat)
         filtered_results = filtered_results.drop_duplicates()
         self.ProteinPSMFiltered = f'{self.percDir}/{self.filetype}_psm_protein_filtered.txt'
         filtered_results.to_csv(self.ProteinPSMFiltered, sep='\t', index=False)
@@ -260,14 +266,16 @@ class ProteinFDR(object):
         df = renamed_protein_filtered_df
         filtered_df = pd.DataFrame(columns=df.columns)
         filtered_df.insert(5, "Genome Coordinates", [])
+        to_concat = [filtered_df]
         for prot, coord in zip(prots, coords):
             ndf = df[df["Protein"] == prot]
             ncoords = []
             for i in range(len(ndf["Protein"].tolist())):
                 ncoords.append(coord)
             ndf.insert(5, "Genome Coordinates", ncoords)
-            filtered_df = filtered_df.append(ndf)
-        filtered_df = filtered_df.drop_duplicates()
+            # filtered_df = filtered_df.append(ndf)
+            to_concat.append(ndf)
+        filtered_df = pd.concat(to_concat)
         filtered_df.to_csv(f"{self.percDir}/{self.filetype}_results_01.txt", sep='\t', index=False)
         # print(filtered_df)
         return self
