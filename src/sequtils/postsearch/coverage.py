@@ -123,6 +123,7 @@ class SubsetFilter(object):
                 'Precursor': [], 'ORF Sequence': [], 'IsotopeError': [], 'PrecursorError(ppm)': [], 'Charge': [],
                 'Peptide': [], 'DeNovoScore': [], 'MSGFScore': [], 'SpecEValue': [], 'EValue': []}
         new_df = pd.DataFrame(data)
+        to_concat = [new_df]
         for orf in self.altORFs:
             df = self.df[self.df["Protein"].str.contains(orf.name)]
             coords = []
@@ -138,7 +139,8 @@ class SubsetFilter(object):
                 df.insert(4, 'Protein', names)
                 df.insert(5, 'Genome Coordinates', coords)
                 df.insert(7, "ORF Sequence", seqs)
-                new_df = new_df.append(df)
+                to_concat.append(df)
+        new_df = pd.concat(to_concat)
         new_df.to_csv(f'{output}.txt', sep='\t', index=False)
 
 

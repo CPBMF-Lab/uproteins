@@ -110,9 +110,11 @@ class ExtendedInformation(object):
             # df = df.drop_duplicates(subset=["SpecFile", "ScanNum"], keep='last')
             # fixed_pep = df["Fixed Peptides"].tolist()
             priority = self.alternatives[stop].priority
+            to_concat = [new_df]
             for alt in self.alternatives[stop]:
                 ndf = df[df["Protein"].str.contains(alt.name)]
-                new_df = new_df.append(ndf)
+                # new_df = new_df.append(ndf)
+                to_concat.append(ndf)
                 prots = ndf["Protein"].tolist()
                 for prot in prots:
                     priority_coords = f'{priority.start}-{priority.end}'
@@ -140,6 +142,7 @@ class ExtendedInformation(object):
                 #     # ndf.insert(3, "Extended ORF", extended)
                 #     # i += 1
                 # new_df = new_df.append(ndf)
+            new_df = pd.concat(to_concat)
         new_df.insert(3, "Extended ORF", extended)
         new_df.insert(4, "Extended Sequence", ext_seqs)
         new_df.insert(5, "Free Energy", energies)
