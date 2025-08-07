@@ -70,8 +70,8 @@ def test_full_run(tmp_path):
         'ms',
         '--outdir', str(tmp_path),
         '--Mass_spec', str(mzml),
-        '--inst', '2',
-        '--t', '800ppm',
+        '--inst', '1',
+        '--t', '6ppm',
         '--Transcriptome', 'YES'
     ]
     uproteins(ms_args)
@@ -218,8 +218,8 @@ def test_external_assembly(tmp_path):
         'ms',
         '--outdir', str(tmp_path),
         '--Mass_spec', str(mzml),
-        '--inst', '2',
-        '--t', '800ppm',
+        '--inst', '1',
+        '--t', '6ppm',
         '--Transcriptome', 'YES'
     ]
     uproteins(ms_args)
